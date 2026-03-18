@@ -5,37 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SitRep RYG Dashboard</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap"
       rel="stylesheet"
+      href="https://fonts2.gov.bc.ca/css?family=BCSans:400,400i,700,700i"
     />
     <style>
       :root {
-        --bg: #f4f3ee;
+        --bg: #f2f2f2;
         --surface: #ffffff;
-        --border: #e5e3db;
-        --border2: #d4d2c9;
-        --text: #1c1c1a;
-        --text2: #6b6960;
-        --text3: #9b9890;
-        --green: #1a9a50;
-        --green-bg: #d6f0e0;
-        --green-text: #0d5c30;
-        --green-border: #86efac;
-        --yellow: #d97706;
-        --yellow-bg: #fef3c7;
-        --yellow-text: #78500a;
-        --yellow-border: #fde68a;
-        --red: #dc2626;
-        --red-bg: #fee2e2;
-        --red-text: #7f1d1d;
-        --red-border: #fca5a5;
-        --blue-bg: #eff6ff;
-        --blue-text: #1e40af;
-        --radius: 14px;
-        --radius-sm: 8px;
-        --radius-pill: 999px;
-        --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --border: #d6d6d6;
+        --border2: #bcbbbb;
+        --text: #2d2d2d;
+        --text2: #474543;
+        --text3: #9f9d9c;
+        --primary: #013366;
+        --primary-hover: #1a5a96;
+        --link: #255a90;
+        --green: #2e8540;
+        --green-bg: #dff0d8;
+        --green-text: #1d4d28;
+        --green-border: #a8d5a2;
+        --yellow: #c8a400;
+        --yellow-bg: #fff7cc;
+        --yellow-text: #6b5500;
+        --yellow-border: #ffe680;
+        --red: #ce3e39;
+        --red-bg: #f9dedd;
+        --red-text: #7a1b18;
+        --red-border: #f4abaa;
+        --blue-bg: #e8f0f8;
+        --blue-text: #013366;
+        --radius: 4px;
+        --radius-sm: 4px;
+        --radius-pill: 4px;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.12);
       }
       * {
         box-sizing: border-box;
@@ -43,7 +46,7 @@
         padding: 0;
       }
       body {
-        font-family: 'Geist', sans-serif;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
         background: var(--bg);
         color: var(--text);
         min-height: 100vh;
@@ -69,7 +72,7 @@
         gap: 14px;
       }
       .header-logo {
-        font-family: 'Geist Mono', monospace;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
         font-size: 11px;
         font-weight: 500;
         color: var(--text3);
@@ -92,7 +95,7 @@
         gap: 10px;
       }
       .week-chip {
-        font-family: 'Geist Mono', monospace;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
         font-size: 11px;
         color: var(--text2);
         background: var(--bg);
@@ -109,7 +112,7 @@
         background: var(--surface);
         color: var(--text2);
         cursor: pointer;
-        font-family: 'Geist', sans-serif;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
         transition: all 0.15s;
       }
       .btn:hover {
@@ -243,7 +246,7 @@
         flex-shrink: 0;
       }
       .summary-item-team {
-        font-family: 'Geist Mono', monospace;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
         font-size: 10px;
         color: var(--text3);
         white-space: nowrap;
@@ -289,7 +292,7 @@
       }
       .coord-select,
       .coord-input {
-        font-family: 'Geist', sans-serif;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
         font-size: 12px;
         padding: 5px 10px;
         border: 1px solid #93c5fd;
@@ -314,7 +317,7 @@
         background: var(--surface);
         color: var(--text2);
         cursor: pointer;
-        font-family: 'Geist', sans-serif;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
         transition: all 0.1s;
       }
       .featured-chip.on {
@@ -345,7 +348,7 @@
         background: var(--surface);
         color: var(--text2);
         cursor: pointer;
-        font-family: 'Geist', sans-serif;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
         transition: all 0.1s;
       }
       .filter-btn.active-all {
@@ -484,7 +487,7 @@
         flex-wrap: wrap;
       }
       .dep-tag {
-        font-family: 'Geist Mono', monospace;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
         font-size: 10px;
         font-weight: 500;
         padding: 2px 8px;
@@ -570,7 +573,7 @@
         border: 1px solid var(--border);
         border-radius: var(--radius-sm);
         padding: 8px 12px;
-        font-family: 'Geist', sans-serif;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
         font-size: 13px;
         color: var(--text);
         outline: none;
@@ -600,7 +603,7 @@
         font-weight: 600;
         background: var(--bg);
         transition: all 0.1s;
-        font-family: 'Geist', sans-serif;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
       }
       .ryg-opt.sel-green {
         border-color: var(--green);
@@ -649,7 +652,7 @@
         padding: 4px 8px;
       }
       .paste-area {
-        font-family: 'Geist Mono', monospace;
+        font-family: 'BCSans', 'BC Sans', sans-serif;
         font-size: 11px;
         min-height: 120px;
       }
@@ -1158,7 +1161,7 @@
         t.highlight
           ? `<div class="card-row">
         <div class="card-lbl">Highlight</div>
-        <div class="card-val">${esc(t.highlight)}${t.initiativeNum ? ` <span style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--text3)">#${esc(t.initiativeNum)}</span>` : ''}</div>
+        <div class="card-val">${esc(t.highlight)}${t.initiativeNum ? ` <span style="font-family:'BCSans', 'BC Sans', sans-serif;font-size:10px;color:var(--text3)">#${esc(t.initiativeNum)}</span>` : ''}</div>
       </div>`
           : ''
       }
@@ -1166,7 +1169,7 @@
         t.blocker
           ? `<div class="card-row">
         <div class="card-lbl">Blocker</div>
-        <div class="card-val">${esc(t.blocker)}${t.escalatorNum ? ` <span style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--red)"> ↑${esc(t.escalatorNum)}</span>` : ''}</div>
+        <div class="card-val">${esc(t.blocker)}${t.escalatorNum ? ` <span style="font-family:'BCSans', 'BC Sans', sans-serif;font-size:10px;color:var(--red)"> ↑${esc(t.escalatorNum)}</span>` : ''}</div>
       </div>`
           : ''
       }
