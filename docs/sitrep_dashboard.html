@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SitRep RYG Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+<style>
+  :root {
+    --bg: #F4F3EE;
+    --surface: #FFFFFF;
+    --surface2: #FAFAF8;
+    --border: #E5E3DB;
+    --border2: #D4D2C9;
+    --text: #1C1C1A;
+    --text2: #6B6960;
+    --text3: #9B9890;
+    --green: #1A9A50;
+    --green-bg: #D6F0E0;
+    --green-text: #0D5C30;
+    --green-border: #86EFAC;
+    --yellow: #D97706;
+    --yellow-bg: #FEF3C7;
+    --yellow-text: #78500A;
+    --yellow-border: #FDE68A;
+    --red: #DC2626;
+    --red-bg: #FEE2E2;
+    --red-text: #7F1D1D;
+    --red-border: #FCA5A5;
+    --blue-bg: #EFF6FF;
+    --blue-text: #1E40AF;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --radius-pill: 999px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Geist', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-logo {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .header-divider { width: 1px; height: 20px; background: var(--border); }
+  .header-title { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .week-chip {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 4px 12px;
+  }
+  .refresh-btn {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Geist', sans-serif;
+  }
+  .refresh-btn:hover { background: var(--bg); border-color: var(--border2); color: var(--text); }
+
+  /* ── MAIN ── */
+  .main { padding: 24px 28px; max-width: 1600px; margin: 0 auto; }
+
+  /* ── SUMMARY BANNER ── */
+  .summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-columns: auto 1fr 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .summary-status { display: flex; flex-direction: column; gap: 8px; min-width: 160px; }
+  .summary-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+  }
+  .overall-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid;
+    width: fit-content;
+  }
+  .overall-pill.green { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
+  .overall-pill.yellow { background: var(--yellow-bg); color: var(--yellow-text); border-color: var(--yellow-border); }
+  .overall-pill.red { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
+
+  .ryg-counts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .ryg-count {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 13px; font-weight: 600;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .dot.green { background: var(--green); }
+  .dot.yellow { background: var(--yellow); }
+  .dot.red { background: var(--red); }
+
+  .summary-divider { width: 1px; background: var(--border); align-self: stretch; }
+
+  .summary-section { display: flex; flex-direction: column; gap: 6px; }
+  .summary-items { display: flex; flex-direction: column; gap: 4px; }
+  .summary-item {
+    display: flex; align-items: flex-start; gap: 6px;
+    font-size: 12px; color: var(--text);
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .summary-item:last-child { border-bottom: none; }
+  .summary-item-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text3); margin-top: 6px; flex-shrink: 0; }
+  .summary-item-team {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text3);
+    white-space: nowrap;
+    padding-top: 1px;
+  }
+
+  .news-text { font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .news-empty { font-size: 12px; color: var(--text3); font-style: italic; }
+
+  /* ── OVERRIDE BAR ── */
+  .override-bar {
+    background: var(--blue-bg);
+    border: 1px solid #BFDBFE;
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .override-label { font-size: 12px; font-weight: 600; color: var(--blue-text); }
+  .override-select {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    padding: 4px 10px;
+    border: 1px solid #93C5FD;
+    border-radius: var(--radius-pill);
+    background: white;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .override-news {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    padding: 4px 10px;
+    border: 1px solid #93C5FD;
+    border-radius: var(--radius-sm);
+    background: white;
+    color: var(--text);
+    flex: 1;
+    min-width: 200px;
+  }
+  .override-save {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: var(--radius-pill);
+    border: none;
+    background: var(--blue-text);
+    color: white;
+    cursor: pointer;
+  }
+  .coordinator-toggle {
+    font-size: 11px;
+    color: var(--blue-text);
+    cursor: pointer;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    font-family: 'Geist', sans-serif;
+    padding: 0;
+  }
+
+  /* ── BENTO GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.15s, transform 0.15s;
+    animation: fadeIn 0.3s ease both;
+  }
+  .card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .card.green::before { background: var(--green); }
+  .card.yellow::before { background: var(--yellow); }
+  .card.red::before { background: var(--red); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .card-team { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+  .status-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    border: 1px solid;
+  }
+  .status-pill.green { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
+  .status-pill.yellow { background: var(--yellow-bg); color: var(--yellow-text); border-color: var(--yellow-border); }
+  .status-pill.red { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
+
+  .card-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: flex-start; }
+  .card-lbl {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text3);
+    min-width: 60px;
+    padding-top: 1px;
+    flex-shrink: 0;
+  }
+  .card-val { font-size: 12px; color: var(--text); line-height: 1.45; }
+  .card-val.mono { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text2); }
+
+  .card-divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+  .deps-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+  .dep-tag {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .dep-tag.out { background: var(--yellow-bg); border-color: var(--yellow-border); color: var(--yellow-text); }
+
+  .card-footer {
+    font-size: 10px;
+    color: var(--text3);
+    font-family: 'Geist Mono', monospace;
+    margin-top: 6px;
+  }
+
+  /* ── LOADING / ERROR / EMPTY ── */
+  .state-box {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--text2);
+    grid-column: 1 / -1;
+  }
+  .state-box .icon { font-size: 32px; margin-bottom: 12px; }
+  .state-box .title { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .state-box .sub { font-size: 13px; color: var(--text2); }
+  .state-box .login-btn {
+    margin-top: 16px;
+    display: inline-block;
+    padding: 10px 24px;
+    background: var(--text);
+    color: white;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: 'Geist', sans-serif;
+  }
+
+  .spinner {
+    width: 24px; height: 24px;
+    border: 2px solid var(--border);
+    border-top-color: var(--text2);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-label { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .filter-btn {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    cursor: pointer;
+    font-family: 'Geist', sans-serif;
+    transition: all 0.1s;
+  }
+  .filter-btn:hover { border-color: var(--border2); color: var(--text); }
+  .filter-btn.active-all { background: var(--text); color: white; border-color: var(--text); }
+  .filter-btn.active-green { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
+  .filter-btn.active-yellow { background: var(--yellow-bg); color: var(--yellow-text); border-color: var(--yellow-border); }
+  .filter-btn.active-red { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
+
+  @media (max-width: 768px) {
+    .main { padding: 16px; }
+    .summary { grid-template-columns: 1fr; }
+    .summary-divider { display: none; }
+    .grid { grid-template-columns: 1fr; }
+    .header { padding: 12px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">BC Gov</div>
+    <div class="header-divider"></div>
+    <div class="header-title">SitRep RYG Dashboard</div>
+  </div>
+  <div class="header-right">
+    <div class="week-chip" id="week-chip">Loading...</div>
+    <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+    <button class="coordinator-toggle" onclick="toggleCoordinator()">Coordinator mode</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Summary Banner -->
+  <div class="summary" id="summary-banner">
+    <div class="summary-status">
+      <div class="summary-label">Program status</div>
+      <div class="overall-pill yellow" id="overall-pill">🟡 At Risk</div>
+      <div class="ryg-counts" id="ryg-counts">
+        <span class="ryg-count"><span class="dot green"></span><span id="g-count">0</span></span>
+        <span class="ryg-count"><span class="dot yellow"></span><span id="y-count">0</span></span>
+        <span class="ryg-count"><span class="dot red"></span><span id="r-count">0</span></span>
+      </div>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-section">
+      <div class="summary-label">Top highlights</div>
+      <div class="summary-items" id="top-highlights">
+        <div class="summary-item"><span class="summary-item-dot"></span><span style="color:var(--text3);font-style:italic">No highlights yet</span></div>
+      </div>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-section">
+      <div class="summary-label">Top blockers</div>
+      <div class="summary-items" id="top-blockers">
+        <div class="summary-item"><span class="summary-item-dot"></span><span style="color:var(--text3);font-style:italic">No blockers yet</span></div>
+      </div>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-section">
+      <div class="summary-label">News</div>
+      <div id="news-content" class="news-empty">No announcements this week.</div>
+    </div>
+  </div>
+
+  <!-- Coordinator Override Bar (hidden by default) -->
+  <div class="override-bar" id="override-bar" style="display:none">
+    <div class="override-label">⚙️ Coordinator</div>
+    <select class="override-select" id="override-status" onchange="applyOverride()">
+      <option value="">Auto status</option>
+      <option value="green">🟢 Override: Green</option>
+      <option value="yellow">🟡 Override: Yellow</option>
+      <option value="red">🔴 Override: Red</option>
+    </select>
+    <input class="override-news" type="text" id="override-news" placeholder="Add news / announcement for this week..." />
+    <button class="override-save" onclick="saveOverride()">Save</button>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <span class="filter-label">Filter:</span>
+    <button class="filter-btn active-all" onclick="setFilter('all', this)">All teams</button>
+    <button class="filter-btn" onclick="setFilter('green', this)">🟢 Green</button>
+    <button class="filter-btn" onclick="setFilter('yellow', this)">🟡 Yellow</button>
+    <button class="filter-btn" onclick="setFilter('red', this)">🔴 Red</button>
+  </div>
+
+  <!-- Bento Grid -->
+  <div class="grid" id="grid">
+    <div class="state-box">
+      <div class="spinner"></div>
+      <div class="title">Connecting to SharePoint...</div>
+      <div class="sub">Signing you in with your BC Gov account</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── CONFIG ──
+const SHAREPOINT_SITE = 'https://bcgov.sharepoint.com/teams/12320-ConnectedServicesStrategicPriority';
+const LIST_NAME = 'Weekly SitRep Data';
+const TENANT_ID = 'common'; // will use logged-in tenant
+
+const msalConfig = {
+  auth: {
+    clientId: '14d82eec-204b-4c2f-b7e8-296a70dab67e', // MS Graph Explorer client (public, for prototyping)
+    authority: `https://login.microsoftonline.com/${TENANT_ID}`,
+    redirectUri: window.location.href.split('?')[0],
+  },
+  cache: { cacheLocation: 'sessionStorage' }
+};
+
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+const scopes = ['Sites.Read.All', 'Sites.ReadWrite.All'];
+
+let allData = [];
+let currentFilter = 'all';
+let overrideStatus = localStorage.getItem('sitrep_override_status') || '';
+let overrideNews = localStorage.getItem('sitrep_override_news') || '';
+let coordinatorMode = false;
+
+// ── AUTH ──
+async function getToken() {
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    try {
+      const result = await msalInstance.acquireTokenSilent({ scopes, account: accounts[0] });
+      return result.accessToken;
+    } catch (e) {}
+  }
+  const result = await msalInstance.acquireTokenPopup({ scopes });
+  return result.accessToken;
+}
+
+// ── LOAD DATA ──
+async function loadData() {
+  setGrid(`<div class="state-box"><div class="spinner"></div><div class="title">Loading dashboard...</div><div class="sub">Reading from SharePoint</div></div>`);
+  try {
+    const token = await getToken();
+    // Get site ID
+    const siteResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/bcgov.sharepoint.com:/teams/12320-ConnectedServicesStrategicPriority`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!siteResp.ok) throw new Error('Cannot access SharePoint site. Make sure you are signed in with your BC Gov account.');
+    const site = await siteResp.json();
+
+    // Get list
+    const listsResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${site.id}/lists?$filter=displayName eq '${LIST_NAME}'`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const lists = await listsResp.json();
+    if (!lists.value || lists.value.length === 0) throw new Error(`List "${LIST_NAME}" not found on this SharePoint site.`);
+    const listId = lists.value[0].id;
+
+    // Get this week's items
+    const weekStart = getWeekStart();
+    const itemsResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${site.id}/lists/${listId}/items?$expand=fields&$orderby=fields/Created desc&$top=200`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const items = await itemsResp.json();
+
+    // Get latest per team this week
+    const weekLabel = getWeekLabel();
+    const byTeam = {};
+    (items.value || []).forEach(item => {
+      const f = item.fields;
+      const team = f.TeamName;
+      if (!team) return;
+      // only this week
+      const created = new Date(f.Created || item.createdDateTime);
+      if (created < weekStart) return;
+      if (!byTeam[team]) byTeam[team] = f;
+    });
+
+    allData = Object.values(byTeam);
+    renderDashboard();
+
+  } catch (err) {
+    setGrid(`<div class="state-box">
+      <div class="icon">🔐</div>
+      <div class="title">Sign in required</div>
+      <div class="sub">${err.message || 'Sign in with your BC Gov Microsoft 365 account to view the dashboard.'}</div>
+      <button class="login-btn" onclick="loadData()">Sign in with BC Gov account</button>
+    </div>`);
+  }
+}
+
+// ── RENDER ──
+function renderDashboard() {
+  updateWeekChip();
+  updateSummary();
+  renderGrid();
+}
+
+function updateWeekChip() {
+  document.getElementById('week-chip').textContent = 'Week of ' + getWeekLabel();
+}
+
+function updateSummary() {
+  const data = allData;
+  const counts = { green: 0, yellow: 0, red: 0 };
+  data.forEach(d => {
+    const s = (d.OverallStatus || '').toLowerCase();
+    if (counts[s] !== undefined) counts[s]++;
+  });
+
+  document.getElementById('g-count').textContent = counts.green;
+  document.getElementById('y-count').textContent = counts.yellow;
+  document.getElementById('r-count').textContent = counts.red;
+
+  // Overall status — auto or override
+  let status = overrideStatus;
+  if (!status) {
+    if (counts.red > 0) status = 'red';
+    else if (counts.yellow > 0) status = 'yellow';
+    else if (counts.green > 0) status = 'green';
+    else status = 'yellow';
+  }
+  const pill = document.getElementById('overall-pill');
+  pill.className = 'overall-pill ' + status;
+  pill.textContent = status === 'green' ? '🟢 On Track' : status === 'yellow' ? '🟡 At Risk' : '🔴 Off Track';
+
+  // Top 3 highlights (FeaturedHighlight = true first, then by red/yellow)
+  const featured = data.filter(d => d.FeaturedHighlight);
+  const rest = data.filter(d => !d.FeaturedHighlight && d.Highlight);
+  const highlights = [...featured, ...rest].slice(0, 3);
+  const hlEl = document.getElementById('top-highlights');
+  if (highlights.length === 0) {
+    hlEl.innerHTML = `<div class="summary-item"><span class="summary-item-dot"></span><span style="color:var(--text3);font-style:italic">No highlights yet</span></div>`;
+  } else {
+    hlEl.innerHTML = highlights.map(d => `
+      <div class="summary-item">
+        <span class="summary-item-dot"></span>
+        <span class="summary-item-team">${esc(d.TeamName)}</span>
+        <span>${esc(d.Highlight || '')}</span>
+      </div>`).join('');
+  }
+
+  // Top 3 blockers (FeaturedBlocker = true first)
+  const featuredB = data.filter(d => d.FeaturedBlocker);
+  const restB = data.filter(d => !d.FeaturedBlocker && d.Blocker);
+  const blockers = [...featuredB, ...restB].slice(0, 3);
+  const blEl = document.getElementById('top-blockers');
+  if (blockers.length === 0) {
+    blEl.innerHTML = `<div class="summary-item"><span class="summary-item-dot"></span><span style="color:var(--text3);font-style:italic">No blockers this week</span></div>`;
+  } else {
+    blEl.innerHTML = blockers.map(d => `
+      <div class="summary-item">
+        <span class="summary-item-dot"></span>
+        <span class="summary-item-team">${esc(d.TeamName)}</span>
+        <span>${esc(d.Blocker || '')}</span>
+      </div>`).join('');
+  }
+
+  // News
+  const news = overrideNews || data.find(d => d.News)?.News || '';
+  const newsEl = document.getElementById('news-content');
+  if (news) {
+    newsEl.className = 'news-text';
+    newsEl.textContent = news;
+  } else {
+    newsEl.className = 'news-empty';
+    newsEl.textContent = 'No announcements this week.';
+  }
+
+  // Coordinator override inputs
+  if (overrideStatus) document.getElementById('override-status').value = overrideStatus;
+  if (overrideNews) document.getElementById('override-news').value = overrideNews;
+}
+
+function renderGrid() {
+  const filtered = currentFilter === 'all'
+    ? allData
+    : allData.filter(d => (d.OverallStatus || '').toLowerCase() === currentFilter);
+
+  if (filtered.length === 0) {
+    setGrid(`<div class="state-box">
+      <div class="icon">📋</div>
+      <div class="title">${currentFilter === 'all' ? 'No submissions this week yet' : 'No ' + currentFilter + ' teams this week'}</div>
+      <div class="sub">Teams submit updates via the Microsoft Form link shared in your Teams channel.</div>
+    </div>`);
+    return;
+  }
+
+  // Build deps-out map: for each team, which teams listed them as a dep-in
+  const depsOutMap = {};
+  allData.forEach(d => {
+    const depsIn = parseDeps(d.DependenciesIn);
+    depsIn.forEach(dep => {
+      if (!depsOutMap[dep]) depsOutMap[dep] = [];
+      if (!depsOutMap[dep].includes(d.TeamName)) depsOutMap[dep].push(d.TeamName);
+    });
+  });
+
+  const order = ['red', 'yellow', 'green'];
+  const sorted = [...filtered].sort((a, b) => {
+    return order.indexOf((a.OverallStatus||'').toLowerCase()) - order.indexOf((b.OverallStatus||'').toLowerCase());
+  });
+
+  document.getElementById('grid').innerHTML = sorted.map((d, i) => {
+    const status = (d.OverallStatus || 'yellow').toLowerCase();
+    const statusLabel = status === 'green' ? '🟢 Green' : status === 'yellow' ? '🟡 Yellow' : '🔴 Red';
+    const depsIn = parseDeps(d.DependenciesIn);
+    const depsOut = depsOutMap[d.TeamName] || [];
+
+    return `<div class="card ${status}" style="animation-delay:${i * 0.04}s">
+      <div class="card-header">
+        <div class="card-team">${esc(d.TeamName)}</div>
+        <div class="status-pill ${status}">${statusLabel}</div>
+      </div>
+      ${d.Highlight ? `<div class="card-row">
+        <div class="card-lbl">Highlight</div>
+        <div class="card-val">${esc(d.Highlight)}${d.InitiativeNumber ? ` <span style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--text3)">#${esc(d.InitiativeNumber)}</span>` : ''}</div>
+      </div>` : ''}
+      ${d.Blocker ? `<div class="card-row">
+        <div class="card-lbl">Blocker</div>
+        <div class="card-val">${esc(d.Blocker)}${d.EscalatorNumber ? ` <span style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--red)">↑${esc(d.EscalatorNumber)}</span>` : ''}</div>
+      </div>` : ''}
+      ${(depsIn.length > 0 || depsOut.length > 0) ? `<div class="card-divider"></div>` : ''}
+      ${depsIn.length > 0 ? `<div class="card-row">
+        <div class="card-lbl">Deps in</div>
+        <div class="deps-row">${depsIn.map(t => `<span class="dep-tag">${esc(t)}</span>`).join('')}</div>
+      </div>` : ''}
+      ${depsOut.length > 0 ? `<div class="card-row">
+        <div class="card-lbl">Deps out</div>
+        <div class="deps-row">${depsOut.map(t => `<span class="dep-tag out">${esc(t)}</span>`).join('')}</div>
+      </div>` : ''}
+      ${d.WeekSummary ? `<div class="card-divider"></div><div class="card-val" style="font-size:11px;color:var(--text2);font-style:italic">${esc(d.WeekSummary)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── HELPERS ──
+function parseDeps(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.filter(Boolean);
+  if (typeof val === 'string') return val.split(';').map(s => s.trim()).filter(Boolean);
+  return [];
+}
+
+function getWeekStart() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function getWeekLabel() {
+  const start = getWeekStart();
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('en-CA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return fmt(start);
+}
+
+function setGrid(html) {
+  document.getElementById('grid').innerHTML = html;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.className = 'filter-btn');
+  btn.classList.add('active-' + f);
+  renderGrid();
+}
+
+function toggleCoordinator() {
+  coordinatorMode = !coordinatorMode;
+  document.getElementById('override-bar').style.display = coordinatorMode ? 'flex' : 'none';
+}
+
+function applyOverride() {
+  overrideStatus = document.getElementById('override-status').value;
+  updateSummary();
+}
+
+function saveOverride() {
+  overrideStatus = document.getElementById('override-status').value;
+  overrideNews = document.getElementById('override-news').value;
+  localStorage.setItem('sitrep_override_status', overrideStatus);
+  localStorage.setItem('sitrep_override_news', overrideNews);
+  updateSummary();
+  alert('Saved! Override will persist on this browser.');
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ──
+msalInstance.initialize().then(() => {
+  msalInstance.handleRedirectPromise().then(() => loadData());
+});
+</script>
+</body>
+</html>
