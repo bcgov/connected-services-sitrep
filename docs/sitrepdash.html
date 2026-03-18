@@ -57,32 +57,28 @@
       /* ── HEADER ── */
       .header {
         background: #013366;
-        padding: 0 28px;
-        display: flex;
-        flex-direction: column;
+        padding: 12px 24px;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
         align-items: center;
-        justify-content: center;
         position: sticky;
         top: 0;
         z-index: 200;
-        min-height: 80px;
-        padding: 12px 28px;
-        gap: 4px;
+        min-height: 72px;
+        gap: 12px;
       }
-      .header-top {
-        width: 100%;
+      .header-left {
         display: flex;
         align-items: center;
-        justify-content: space-between;
       }
       .header-center {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 4px;
+        gap: 3px;
       }
       .header-title {
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 700;
         color: #fff;
         letter-spacing: -0.02em;
@@ -90,18 +86,14 @@
       }
       .header-week {
         font-size: 12px;
-        color: rgba(255, 255, 255, 0.75);
+        color: rgba(255, 255, 255, 0.7);
         text-align: center;
-        font-weight: 400;
-      }
-      .header-left {
-        display: flex;
-        align-items: center;
       }
       .header-right {
         display: flex;
         align-items: center;
         gap: 8px;
+        justify-content: flex-end;
       }
       .week-chip {
         display: none;
@@ -153,13 +145,24 @@
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        padding: 20px 24px;
+        padding: 0;
         margin-bottom: 20px;
         box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .summary-top {
         display: grid;
-        grid-template-columns: auto 1px 1fr 1px 1fr 1px 1fr;
-        gap: 20px;
+        grid-template-columns: 160px 1px 1fr 1px 1fr;
+        gap: 0;
         align-items: start;
+      }
+      .summary-bottom {
+        border-top: 1px solid var(--border);
+        padding: 14px 20px;
+        background: var(--bg);
+      }
+      .summary-cell {
+        padding: 16px 20px;
       }
       .summary-divider {
         background: var(--border);
@@ -172,6 +175,14 @@
         letter-spacing: 0.08em;
         color: var(--text3);
         margin-bottom: 8px;
+      }
+      .summary-news-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text3);
+        margin-bottom: 6px;
       }
       .overall-pill {
         display: inline-flex;
@@ -233,7 +244,7 @@
       .summary-item {
         display: flex;
         align-items: flex-start;
-        gap: 6px;
+        gap: 8px;
         font-size: 12px;
         padding: 5px 0;
         border-bottom: 1px solid var(--border);
@@ -251,10 +262,19 @@
       }
       .summary-item-team {
         font-size: 10px;
-        color: var(--text3);
+        font-weight: 700;
+        color: var(--primary);
         white-space: nowrap;
         padding-top: 1px;
-        min-width: 48px;
+        min-width: 52px;
+        max-width: 72px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .summary-item-text {
+        flex: 1;
+        color: var(--text);
+        line-height: 1.4;
       }
       .news-text {
         font-size: 12px;
@@ -277,9 +297,27 @@
         display: none;
         flex-direction: column;
         gap: 12px;
+        position: relative;
       }
       .coord-bar.show {
         display: flex;
+      }
+      .coord-close {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        background: none;
+        border: none;
+        font-size: 16px;
+        color: var(--text3);
+        cursor: pointer;
+        line-height: 1;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .coord-close:hover {
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--text);
       }
       .coord-row {
         display: flex;
@@ -327,6 +365,32 @@
         display: flex;
         gap: 6px;
         flex-wrap: wrap;
+      }
+
+      /* ── CARD EDIT BTN ── */
+      .card-edit-btn {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text3);
+        font-size: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.1s;
+        padding: 0;
+        line-height: 1;
+      }
+      .card-edit-btn:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
       }
 
       /* ── FILTER BAR ── */
@@ -394,7 +458,6 @@
           transform 0.15s;
         animation: fadeIn 0.25s ease both;
       }
-
       .card:hover {
         box-shadow: var(--shadow-md);
         transform: translateY(-1px);
@@ -513,29 +576,6 @@
         font-style: italic;
         margin-top: 6px;
         line-height: 1.5;
-      }
-      .card-edit-btn {
-        position: absolute;
-        bottom: 10px;
-        right: 10px;
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        border: 1px solid var(--border);
-        background: var(--surface);
-        color: var(--text3);
-        font-size: 11px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.1s;
-        line-height: 1;
-      }
-      .card-edit-btn:hover {
-        background: var(--primary);
-        color: white;
-        border-color: var(--primary);
       }
 
       /* ── EMPTY CARD ── */
@@ -759,7 +799,7 @@
         .main {
           padding: 16px;
         }
-        .summary {
+        .summary-top {
           grid-template-columns: 1fr;
         }
         .summary-divider {
@@ -772,10 +812,10 @@
           grid-template-columns: 1fr;
         }
         .header {
-          padding: 0 16px;
+          padding: 10px 16px;
         }
         .header-title {
-          font-size: 13px;
+          font-size: 16px;
         }
       }
     </style>
@@ -783,49 +823,43 @@
   <body>
     <!-- ══════════════════════════════════════════
      HEADER
-    ══════════════════════════════════════════ -->
+══════════════════════════════════════════ -->
     <div class="header">
-      <div class="header-top">
-        <div class="header-left">
-          <img
-            src="https://www2.gov.bc.ca/images/BCID_H_rgb_pos.png"
-            alt="Government of British Columbia"
-            height="38"
-            style="
-              display: block;
-              filter: brightness(0) invert(1);
-              opacity: 0.92;
-            "
-          />
-        </div>
-        <div class="header-center">
-          <div class="header-title">SitRep RYG Dashboard</div>
-          <div class="header-week" id="week-chip"></div>
-        </div>
-        <div class="header-right">
-          <div
-            id="csv-controls"
-            style="display: flex; gap: 8px; align-items: center"
+      <div class="header-left">
+        <img
+          src="https://www2.gov.bc.ca/images/BCID_H_rgb_pos.png"
+          alt="Government of British Columbia"
+          height="36"
+          style="display: block; filter: brightness(0) invert(1); opacity: 0.95"
+        />
+      </div>
+      <div class="header-center">
+        <div class="header-title">SitRep RYG Dashboard</div>
+        <div class="header-week" id="week-chip"></div>
+      </div>
+      <div class="header-right">
+        <div
+          id="csv-controls"
+          style="display: flex; gap: 8px; align-items: center"
+        >
+          <button
+            class="hbtn"
+            onclick="document.getElementById('csv-upload').click()"
           >
-            <button
-              class="hbtn"
-              onclick="document.getElementById('csv-upload').click()"
-            >
-              📂 Upload CSV
-            </button>
-            <input
-              type="file"
-              id="csv-upload"
-              accept=".csv"
-              style="display: none"
-              onchange="uploadCSV(event)"
-            />
-            <button class="hbtn danger" onclick="clearAll()">
-              🗑 Clear week
-            </button>
-          </div>
-          <button class="hbtn" onclick="toggleCoord()">⚙️ Coordinator</button>
+            📂 Upload CSV
+          </button>
+          <input
+            type="file"
+            id="csv-upload"
+            accept=".csv"
+            style="display: none"
+            onchange="uploadCSV(event)"
+          />
+          <button class="hbtn danger" onclick="clearAll()">
+            🗑 Clear week
+          </button>
         </div>
+        <button class="hbtn" onclick="toggleCoord()">⚙️ Coordinator</button>
       </div>
     </div>
 
@@ -836,51 +870,58 @@
       <!-- Summary Banner -->
       <div
         style="
-          font-size: 11px;
+          font-size: 13px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.08em;
-          color: var(--text3);
-          margin-bottom: 8px;
+          color: var(--text2);
+          margin-bottom: 10px;
+          padding-left: 2px;
         "
       >
-        Weekly Program Summary
+        📊 Weekly Program Summary
       </div>
       <div class="summary">
-        <div>
-          <div class="summary-label">Program status</div>
-          <div class="overall-pill yellow" id="overall-pill">🟡 At Risk</div>
-          <div class="ryg-counts">
-            <span class="ryg-count"
-              ><span class="dot green"></span><span id="g-count">0</span></span
-            >
-            <span class="ryg-count"
-              ><span class="dot yellow"></span><span id="y-count">0</span></span
-            >
-            <span class="ryg-count"
-              ><span class="dot red"></span><span id="r-count">0</span></span
-            >
+        <div class="summary-top">
+          <div class="summary-cell">
+            <div class="summary-label">Program status</div>
+            <div class="overall-pill yellow" id="overall-pill">🟡 At Risk</div>
+            <div class="ryg-counts">
+              <span class="ryg-count"
+                ><span class="dot green"></span
+                ><span id="g-count">0</span></span
+              >
+              <span class="ryg-count"
+                ><span class="dot yellow"></span
+                ><span id="y-count">0</span></span
+              >
+              <span class="ryg-count"
+                ><span class="dot red"></span><span id="r-count">0</span></span
+              >
+            </div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-cell">
+            <div class="summary-label">Top highlights</div>
+            <div class="summary-items" id="top-highlights"></div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-cell">
+            <div class="summary-label">Top blockers</div>
+            <div class="summary-items" id="top-blockers"></div>
           </div>
         </div>
-        <div class="summary-divider"></div>
-        <div>
-          <div class="summary-label">Top highlights</div>
-          <div class="summary-items" id="top-highlights"></div>
-        </div>
-        <div class="summary-divider"></div>
-        <div>
-          <div class="summary-label">Top blockers</div>
-          <div class="summary-items" id="top-blockers"></div>
-        </div>
-        <div class="summary-divider"></div>
-        <div>
-          <div class="summary-label">News</div>
+        <div class="summary-bottom">
+          <div class="summary-news-label">📢 News &amp; Announcements</div>
           <div id="news-el" class="news-empty">No announcements this week.</div>
         </div>
       </div>
 
       <!-- Coordinator Bar -->
       <div class="coord-bar" id="coord-bar">
+        <button class="coord-close" onclick="toggleCoord()" title="Close">
+          ✕
+        </button>
         <div class="coord-row">
           <span class="coord-label">Override status</span>
           <select class="coord-select" id="coord-status" onchange="saveCoord()">
@@ -930,6 +971,21 @@
         </button>
       </div>
 
+      <!-- Team Updates heading -->
+      <div
+        style="
+          font-size: 13px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: var(--text2);
+          margin-bottom: 10px;
+          padding-left: 2px;
+        "
+      >
+        🏢 Team Updates
+      </div>
+
       <!-- Bento Grid -->
       <div class="grid" id="grid"></div>
     </div>
@@ -966,6 +1022,7 @@
               <option>Disability Services</option>
               <option>SSI</option>
               <option>SDPR/SDD</option>
+              <option>ACT</option>
             </select>
           </div>
           <div class="field-group">
@@ -1060,6 +1117,7 @@
         'Disability Services',
         'SSI',
         'SDPR/SDD',
+        'ACT',
       ]
 
       let data = JSON.parse(localStorage.getItem('sitrep_v2') || '{}')
@@ -1162,7 +1220,7 @@
           ? hlTeams
               .map(
                 (t) =>
-                  `<div class="summary-item"><span class="summary-item-dot"></span><span class="summary-item-team">${esc(t.team)}</span><span>${esc(t.highlight)}</span></div>`,
+                  `<div class="summary-item"><span class="summary-item-dot"></span><span class="summary-item-team" title="${esc(t.team)}">${esc(t.team)}</span><span class="summary-item-text">${esc(t.highlight)}</span></div>`,
               )
               .join('')
           : `<div class="summary-item"><span style="color:var(--text3);font-style:italic">No highlights yet</span></div>`
@@ -1185,7 +1243,7 @@
           ? blTeams
               .map(
                 (t) =>
-                  `<div class="summary-item"><span class="summary-item-dot"></span><span class="summary-item-team">${esc(t.team)}</span><span>${esc(t.blocker)}</span></div>`,
+                  `<div class="summary-item"><span class="summary-item-dot"></span><span class="summary-item-team" title="${esc(t.team)}">${esc(t.team)}</span><span class="summary-item-text">${esc(t.blocker)}</span></div>`,
               )
               .join('')
           : `<div class="summary-item"><span style="color:var(--text3);font-style:italic">No blockers this week</span></div>`
@@ -1290,7 +1348,7 @@
       ${di.length > 0 ? `<div class="card-row"><div class="card-lbl">Deps in</div><div class="deps-row">${di.map((d) => `<span class="dep-tag">${esc(d)}</span>`).join('')}</div></div>` : ''}
       ${dout.length > 0 ? `<div class="card-row"><div class="card-lbl">Deps out</div><div class="deps-row">${dout.map((d) => `<span class="dep-tag out">${esc(d)}</span>`).join('')}</div></div>` : ''}
       ${t.summary ? `<div class="card-divider"></div><div class="card-summary">${esc(t.summary)}</div>` : ''}
-      <button class="card-edit-btn" onclick="openModal('${esc(teamName)}')" title="Edit">✏️</button>
+      <button class="card-edit-btn" onclick="openModal('${esc(teamName)}')">✏️ Edit</button>
     </div>`
           })
           .join('')
