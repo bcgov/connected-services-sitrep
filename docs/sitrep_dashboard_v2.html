@@ -1323,19 +1323,43 @@
         if (!file) return
         const reader = new FileReader()
         reader.onload = function (e) {
-          const lines = e.target.result.split('\n').filter((l) => l.trim())
+          const text = e.target.result.replace(/^\uFEFF/, '')
+          const lines = text.split(/\r?\n/).filter((l) => l.trim())
           const headers = lines[0]
             .split(',')
             .map((h) => h.trim().replace(/"/g, ''))
           let count = 0
           for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].match(/(".*?"|[^,]+)(?=,|$)/g) || []
+            const cols = []
+            let current = ''
+            let inQuotes = false
+            for (let c = 0; c < lines[i].length; c++) {
+              const ch = lines[i][c]
+              if (ch === '"') {
+                inQuotes = !inQuotes
+              } else if (ch === ',' && !inQuotes) {
+                cols.push(current.trim())
+                current = ''
+              } else {
+                current += ch
+              }
+            }
+            cols.push(current.trim())
             const row = {}
-            headers.forEach(
-              (h, j) => (row[h] = (cols[j] || '').replace(/"/g, '').trim()),
-            )
+            headers.forEach((h, j) => (row[h] = (cols[j] || '').trim()))
             const team = row.TeamName
             if (!team) continue
+            // Parse DependenciesIn — handles ["Notify","Workflow"] format
+            let depsIn = []
+            if (row.DependenciesIn) {
+              try {
+                depsIn = JSON.parse(row.DependenciesIn.replace(/""/g, '"'))
+              } catch {
+                depsIn = row.DependenciesIn.split(';')
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+              }
+            }
             data[team] = {
               team,
               status: (row.OverallStatus || 'yellow').toLowerCase(),
@@ -1343,11 +1367,7 @@
               blocker: row.Blocker || '',
               initiativeNum: row.InitiativeNumber || '',
               escalatorNum: row.EscalatorNumber || '',
-              depsIn: row.DependenciesIn
-                ? row.DependenciesIn.split(';')
-                    .map((s) => s.trim())
-                    .filter(Boolean)
-                : [],
+              depsIn,
               summary: row.WeekSummary || '',
             }
             count++
