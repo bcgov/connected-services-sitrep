@@ -1034,13 +1034,20 @@
         document.getElementById('y-count').textContent = counts.yellow
         document.getElementById('r-count').textContent = counts.red
 
-        // Overall status
+        // Overall status on the main dashbaord calculated based on RYG counts, but can be overridden by coordinator if needed
         let status = coord.status || ''
         if (!status) {
-          if (counts.red > 0) status = 'red'
-          else if (counts.yellow > 0) status = 'yellow'
-          else if (counts.green > 0) status = 'green'
-          else status = 'yellow'
+          const total = counts.green + counts.yellow + counts.red
+          if (total === 0) {
+            status = 'yellow'
+          } else {
+            const score = counts.green * 2 + counts.yellow * 1 + counts.red * 0
+            const maxScore = total * 2
+            const pct = (score / maxScore) * 100
+            if (counts.red >= 3 || pct < 45) status = 'red'
+            else if (pct >= 75) status = 'green'
+            else status = 'yellow'
+          }
         }
         const pill = document.getElementById('overall-pill')
         pill.className = 'overall-pill ' + status
