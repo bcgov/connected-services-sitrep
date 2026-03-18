@@ -107,18 +107,19 @@
       }
       .btn {
         font-size: 12px;
-        font-weight: 500;
+        font-weight: 600;
         padding: 5px 14px;
         border-radius: var(--radius-pill);
-        border: 1px solid rgba(255, 255, 255, 0.35);
-        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.15);
         color: #ffffff;
         cursor: pointer;
         font-family: 'BCSans', sans-serif;
         transition: all 0.15s;
       }
       .btn:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.28);
+        border-color: white;
       }
       .btn.primary {
         background: #ffffff;
@@ -551,6 +552,27 @@
         font-weight: 600;
         margin-bottom: 16px;
       }
+      .data-view .btn {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border2);
+      }
+      .data-view .btn:hover {
+        background: var(--bg);
+        color: var(--text);
+        border-color: var(--primary);
+      }
+      .data-view .btn.primary {
+        background: var(--primary);
+        color: #ffffff;
+        border-color: var(--primary);
+      }
+      .data-view .btn.primary:hover {
+        background: #1a5a96;
+      }
+      .data-view .field-label {
+        color: var(--text2);
+      }
       .field-group {
         margin-bottom: 14px;
       }
@@ -719,7 +741,7 @@
     <div class="header">
       <div class="header-left">
         <img
-          src="https://www2.gov.bc.ca/StaticWebResources/static/gov3/images/gov_bc_logo.png"
+          src="https://www2.gov.bc.ca/images/BCID_H_rgb_pos.png"
           alt="BC Government"
           height="35"
           style="display: block"
@@ -1372,9 +1394,13 @@
             let depsIn = []
             if (row.DependenciesIn) {
               try {
-                depsIn = JSON.parse(row.DependenciesIn.replace(/""/g, '"'))
+                const parsed = JSON.parse(
+                  row.DependenciesIn.replace(/""/g, '"'),
+                )
+                depsIn = Array.isArray(parsed) ? parsed : [parsed]
               } catch {
-                depsIn = row.DependenciesIn.split(';')
+                depsIn = row.DependenciesIn.replace(/[\[\]"]/g, '')
+                  .split(/[;,]/)
                   .map((s) => s.trim())
                   .filter(Boolean)
               }
