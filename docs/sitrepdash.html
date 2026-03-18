@@ -286,6 +286,54 @@
         color: var(--text3);
         font-style: italic;
       }
+      .summary-meetings {
+        border-top: 1px solid var(--border);
+        padding: 12px 20px;
+      }
+      .meeting-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .meeting-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 6px 12px;
+        font-size: 12px;
+        box-shadow: var(--shadow);
+      }
+      .meeting-chip-icon {
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+      .meeting-chip-title {
+        font-weight: 700;
+        color: var(--text);
+      }
+      .meeting-chip-time {
+        color: var(--text3);
+        font-size: 11px;
+        white-space: nowrap;
+      }
+      .meeting-chip-link {
+        font-size: 11px;
+        color: var(--link);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .meeting-chip-link:hover {
+        text-decoration: underline;
+      }
+      .meeting-empty {
+        font-size: 12px;
+        color: var(--text3);
+        font-style: italic;
+      }
 
       /* ── COORDINATOR BAR ── */
       .coord-bar {
@@ -915,6 +963,12 @@
           <div class="summary-news-label">📢 News &amp; Announcements</div>
           <div id="news-el" class="news-empty">No announcements this week.</div>
         </div>
+        <div class="summary-meetings">
+          <div class="summary-news-label">📅 Meetings this week</div>
+          <div class="meeting-chips" id="meetings-display">
+            <span class="meeting-empty">No meetings added yet.</span>
+          </div>
+        </div>
       </div>
 
       <!-- Coordinator Bar -->
@@ -948,6 +1002,141 @@
         <div class="coord-row">
           <span class="coord-label">Feature blockers</span>
           <div class="coord-featured" id="feat-bl-chips"></div>
+        </div>
+        <div
+          style="
+            border-top: 1px solid #bfdbfe;
+            padding-top: 12px;
+            margin-top: 4px;
+          "
+        >
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 700;
+              color: var(--blue-text);
+              margin-bottom: 10px;
+            "
+          >
+            📅 Meetings this week
+          </div>
+          <div
+            id="meetings-list"
+            style="
+              display: flex;
+              flex-direction: column;
+              gap: 6px;
+              margin-bottom: 10px;
+            "
+          ></div>
+          <div
+            style="
+              display: flex;
+              gap: 8px;
+              flex-wrap: wrap;
+              align-items: flex-end;
+            "
+          >
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                flex: 2;
+                min-width: 160px;
+              "
+            >
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  text-transform: uppercase;
+                  letter-spacing: 0.06em;
+                  color: var(--blue-text);
+                "
+                >Meeting title</label
+              >
+              <input
+                class="coord-input"
+                type="text"
+                id="mtg-title"
+                placeholder="e.g. ADM Bi-weekly"
+                style="min-width: 0"
+              />
+            </div>
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                flex: 2;
+                min-width: 140px;
+              "
+            >
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  text-transform: uppercase;
+                  letter-spacing: 0.06em;
+                  color: var(--blue-text);
+                "
+                >Date &amp; time</label
+              >
+              <input
+                class="coord-input"
+                type="text"
+                id="mtg-time"
+                placeholder="e.g. Mon Mar 17, 2:30pm"
+                style="min-width: 0"
+              />
+            </div>
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                flex: 2;
+                min-width: 140px;
+              "
+            >
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  text-transform: uppercase;
+                  letter-spacing: 0.06em;
+                  color: var(--blue-text);
+                "
+                >Link (optional)</label
+              >
+              <input
+                class="coord-input"
+                type="text"
+                id="mtg-link"
+                placeholder="e.g. https://teams.microsoft.com/..."
+                style="min-width: 0"
+              />
+            </div>
+            <button
+              onclick="addMeeting()"
+              style="
+                font-family: 'BCSans', sans-serif;
+                font-size: 12px;
+                font-weight: 700;
+                padding: 7px 16px;
+                border-radius: var(--radius-pill);
+                border: none;
+                background: var(--primary);
+                color: white;
+                cursor: pointer;
+                white-space: nowrap;
+                flex-shrink: 0;
+              "
+            >
+              + Add meeting
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1253,6 +1442,9 @@
         const newsEl = document.getElementById('news-el')
         newsEl.className = news ? 'news-text' : 'news-empty'
         newsEl.textContent = news || 'No announcements this week.'
+
+        // Meetings
+        renderMeetingsDisplay()
       }
 
       // ── BENTO GRID ──
@@ -1348,7 +1540,7 @@
       ${di.length > 0 ? `<div class="card-row"><div class="card-lbl">Deps in</div><div class="deps-row">${di.map((d) => `<span class="dep-tag">${esc(d)}</span>`).join('')}</div></div>` : ''}
       ${dout.length > 0 ? `<div class="card-row"><div class="card-lbl">Deps out</div><div class="deps-row">${dout.map((d) => `<span class="dep-tag out">${esc(d)}</span>`).join('')}</div></div>` : ''}
       ${t.summary ? `<div class="card-divider"></div><div class="card-summary">${esc(t.summary)}</div>` : ''}
-      <button class="card-edit-btn" onclick="openModal('${esc(teamName)}')">✏️ Edit</button>
+      <button class="card-edit-btn" onclick="openModal('${esc(teamName)}')" title="Edit">✏️</button>
     </div>`
           })
           .join('')
@@ -1454,6 +1646,7 @@
           document.getElementById('coord-status').value = coord.status || ''
           document.getElementById('coord-news').value = coord.news || ''
           renderFeaturedChips()
+          renderMeetingsList()
         }
       }
 
@@ -1497,6 +1690,73 @@
         localStorage.setItem('sitrep_coord', JSON.stringify(coord))
         renderFeaturedChips()
         updateSummary()
+      }
+
+      // ── MEETINGS ──
+      function addMeeting() {
+        const title = document.getElementById('mtg-title').value.trim()
+        const time = document.getElementById('mtg-time').value.trim()
+        const link = document.getElementById('mtg-link').value.trim()
+        if (!title) {
+          showToast('Please enter a meeting title')
+          return
+        }
+        if (!coord.meetings) coord.meetings = []
+        coord.meetings.push({ title, time, link, id: Date.now() })
+        localStorage.setItem('sitrep_coord', JSON.stringify(coord))
+        document.getElementById('mtg-title').value = ''
+        document.getElementById('mtg-time').value = ''
+        document.getElementById('mtg-link').value = ''
+        renderMeetingsList()
+        updateSummary()
+        showToast('✓ Meeting added')
+      }
+
+      function removeMeeting(id) {
+        coord.meetings = (coord.meetings || []).filter((m) => m.id !== id)
+        localStorage.setItem('sitrep_coord', JSON.stringify(coord))
+        renderMeetingsList()
+        updateSummary()
+      }
+
+      function renderMeetingsList() {
+        const meetings = coord.meetings || []
+        const el = document.getElementById('meetings-list')
+        if (!el) return
+        el.innerHTML = meetings.length
+          ? meetings
+              .map(
+                (
+                  m,
+                ) => `<div style="display:flex;align-items:center;gap:8px;background:white;border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;">
+        <span style="flex:1;font-weight:600">${esc(m.title)}</span>
+        ${m.time ? `<span style="color:var(--text3);font-size:11px">${esc(m.time)}</span>` : ''}
+        ${m.link ? `<a href="${esc(m.link)}" target="_blank" style="font-size:11px;color:var(--link)">🔗 Link</a>` : ''}
+        <button onclick="removeMeeting(${m.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;" title="Remove">✕</button>
+      </div>`,
+              )
+              .join('')
+          : '<span style="font-size:12px;color:var(--text3)">No meetings added yet</span>'
+      }
+
+      function renderMeetingsDisplay() {
+        const meetings = coord.meetings || []
+        const el = document.getElementById('meetings-display')
+        if (!el) return
+        el.innerHTML = meetings.length
+          ? meetings
+              .map(
+                (m) => `<div class="meeting-chip">
+        <span class="meeting-chip-icon">📅</span>
+        <div style="display:flex;flex-direction:column;gap:1px;">
+          <span class="meeting-chip-title">${esc(m.title)}</span>
+          ${m.time ? `<span class="meeting-chip-time">${esc(m.time)}</span>` : ''}
+        </div>
+        ${m.link ? `<a href="${esc(m.link)}" target="_blank" class="meeting-chip-link">Join →</a>` : ''}
+      </div>`,
+              )
+              .join('')
+          : '<span class="meeting-empty">No meetings added yet.</span>'
       }
 
       // ── CSV UPLOAD ──
