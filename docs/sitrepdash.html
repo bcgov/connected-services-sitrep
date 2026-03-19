@@ -1449,7 +1449,7 @@
           // Get this week's items
           const weekStart = getWeekStart().toISOString()
           const itemsResp = await fetch(
-            `https://graph.microsoft.com/v1.0/sites/${site.id}/lists/${listId}/items?$expand=fields&$orderby=fields/Created desc&$top=200`,
+            `https://graph.microsoft.com/v1.0/sites/${site.id}/lists/${listId}/items?$expand=fields&$top=200`,
             { headers: { Authorization: `Bearer ${token}` } },
           )
           const items = await itemsResp.json()
