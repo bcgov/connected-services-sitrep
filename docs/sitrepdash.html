@@ -1403,12 +1403,6 @@
           } catch (e) {}
         }
 
-        // 2. Try SSO silent — works if user is already signed into BC Gov M365 in browser
-        //try {
-        // const result = await msalInstance.ssoSilent({ scopes })
-        // return result.accessToken
-        //} catch (e) {}
-
         // 3. Last resort — popup (only fires if SSO silent fails)
         try {
           const result = await msalInstance.loginPopup({ scopes })
