@@ -1363,7 +1363,7 @@
           clientId: CONFIG.clientId,
           authority:
             'https://login.microsoftonline.com/6fdb5200-3d0d-4a8a-b036-d3685e359adc',
-          redirectUri: window.location.href.split('?')[0].split('#')[0],
+          redirectUri: window.location.origin,
         },
         cache: { cacheLocation: 'sessionStorage' },
       }
@@ -1404,10 +1404,10 @@
         }
 
         // 2. Try SSO silent — works if user is already signed into BC Gov M365 in browser
-        try {
-          const result = await msalInstance.ssoSilent({ scopes })
-          return result.accessToken
-        } catch (e) {}
+        //try {
+        // const result = await msalInstance.ssoSilent({ scopes })
+        // return result.accessToken
+        //} catch (e) {}
 
         // 3. Last resort — popup (only fires if SSO silent fails)
         try {
@@ -1468,7 +1468,7 @@
             const team = f.TeamName
             if (!team) return
             const created = new Date(f.Created || item.createdDateTime)
-            if (created < weekStartDate) return
+            if (created < new Date('2026-01-01')) return
             if (!byTeam[team]) byTeam[team] = f
           })
 
