@@ -1378,16 +1378,21 @@
         }
         msalInstance = new PublicClientApplication(msalConfig)
         await msalInstance.initialize()
-        await msalInstance.handleRedirectPromise()
+        try {
+          const redirectResult = await msalInstance.handleRedirectPromise()
+          if (redirectResult) return redirectResult.accessToken
+        } catch (e) {}
         return true
       }
 
       async function getToken() {
-        const accounts = msalInstance.getAllAccounts()
         const scopes = [
           'https://graph.microsoft.com/Sites.Read.All',
           'https://graph.microsoft.com/Sites.ReadWrite.All',
         ]
+
+        // 1. Try silent with existing cached account
+        const accounts = msalInstance.getAllAccounts()
         if (accounts.length > 0) {
           try {
             const result = await msalInstance.acquireTokenSilent({
@@ -1397,19 +1402,37 @@
             return result.accessToken
           } catch (e) {}
         }
-        const result = await msalInstance.acquireTokenPopup({ scopes })
-        return result.accessToken
+
+        // 2. Try SSO silent — works if user is already signed into BC Gov M365 in browser
+        try {
+          const result = await msalInstance.ssoSilent({ scopes })
+          return result.accessToken
+        } catch (e) {}
+
+        // 3. Last resort — popup (only fires if SSO silent fails)
+        try {
+          const result = await msalInstance.loginPopup({ scopes })
+          return result.accessToken
+        } catch (e) {
+          throw new Error(
+            'Sign in failed — please allow popups for this site and try again',
+          )
+        }
       }
 
       async function loadFromSharePoint() {
         setGridLoading()
         try {
-          const ok = await initMsal()
-          if (!ok) {
+          const initResult = await initMsal()
+          if (!initResult) {
             renderAll()
             return
           }
-          const token = await getToken()
+
+          // If initResult is a string it's a token from redirect
+          let token =
+            typeof initResult === 'string' ? initResult : await getToken()
+          if (!token) return // redirecting to login — page will reload
 
           // Get site
           const siteResp = await fetch(
@@ -1486,7 +1509,7 @@
       <div style="font-size:24px;margin-bottom:12px">🔐</div>
       <div style="font-size:15px;font-weight:700;margin-bottom:6px;color:var(--text)">Sign in required</div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:16px">${err.message || 'Sign in with your BC Gov Microsoft 365 account'}</div>
-      <button onclick="loadFromSharePoint()" style="font-family:'BCSans',sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:999px;border:none;background:var(--primary);color:white;cursor:pointer;">Sign in with BC Gov account</button>
+      <button onclick="loadFromSharePoint()" style="font-family:'BCSans',sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:999px;border:none;background:var(--primary);color:white;cursor:pointer;">Sign in with BC Gov account →</button>
     </div>`
         }
       }
