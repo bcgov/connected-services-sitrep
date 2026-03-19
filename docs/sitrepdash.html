@@ -29,11 +29,9 @@
         font-weight: 700;
         font-style: italic;
       }
-    </style>
-    <style>
       :root {
         --bg: #f2f2f2;
-        --surface: #ffffff;
+        --surface: #fff;
         --border: #d6d6d6;
         --border2: #bcbbbb;
         --text: #2d2d2d;
@@ -75,8 +73,6 @@
         font-size: 13px;
         line-height: 1.5;
       }
-
-      /* ── HEADER ── */
       .header {
         background: #013366;
         padding: 12px 24px;
@@ -137,32 +133,18 @@
         background: rgba(255, 255, 255, 0.25);
         border-color: white;
       }
-      .hbtn.primary {
-        background: #fff;
-        color: #013366;
-        border-color: #fff;
-        font-weight: 700;
-      }
-      .hbtn.primary:hover {
-        background: #f0f0f0;
-      }
       .hbtn.danger {
         border-color: rgba(255, 150, 150, 0.6);
         color: rgba(255, 200, 200, 1);
       }
       .hbtn.danger:hover {
         background: rgba(255, 100, 100, 0.2);
-        border-color: rgba(255, 150, 150, 0.9);
       }
-
-      /* ── MAIN ── */
       .main {
         padding: 24px 28px;
         max-width: 1600px;
         margin: 0 auto;
       }
-
-      /* ── SUMMARY BANNER ── */
       .summary {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -182,6 +164,10 @@
         border-top: 1px solid var(--border);
         padding: 14px 20px;
         background: var(--bg);
+      }
+      .summary-meetings {
+        border-top: 1px solid var(--border);
+        padding: 12px 20px;
       }
       .summary-cell {
         padding: 16px 20px;
@@ -308,10 +294,6 @@
         color: var(--text3);
         font-style: italic;
       }
-      .summary-meetings {
-        border-top: 1px solid var(--border);
-        padding: 12px 20px;
-      }
       .meeting-chips {
         display: flex;
         flex-wrap: wrap;
@@ -328,10 +310,6 @@
         padding: 6px 12px;
         font-size: 12px;
         box-shadow: var(--shadow);
-      }
-      .meeting-chip-icon {
-        font-size: 14px;
-        flex-shrink: 0;
       }
       .meeting-chip-title {
         font-weight: 700;
@@ -356,8 +334,6 @@
         color: var(--text3);
         font-style: italic;
       }
-
-      /* ── COORDINATOR BAR ── */
       .coord-bar {
         background: var(--blue-bg);
         border: 1px solid #bfdbfe;
@@ -415,6 +391,11 @@
         flex: 1;
         min-width: 240px;
       }
+      .coord-saving {
+        font-size: 11px;
+        color: var(--text3);
+        font-style: italic;
+      }
       .featured-chip {
         font-size: 11px;
         padding: 3px 10px;
@@ -436,8 +417,6 @@
         gap: 6px;
         flex-wrap: wrap;
       }
-
-      /* ── CARD EDIT BTN ── */
       .card-edit-btn {
         position: absolute;
         bottom: 10px;
@@ -462,8 +441,6 @@
         color: white;
         border-color: var(--primary);
       }
-
-      /* ── FILTER BAR ── */
       .filter-bar {
         display: flex;
         align-items: center;
@@ -508,8 +485,6 @@
         color: var(--red-text);
         border-color: var(--red-border);
       }
-
-      /* ── BENTO GRID ── */
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -647,8 +622,6 @@
         margin-top: 6px;
         line-height: 1.5;
       }
-
-      /* ── EMPTY CARD ── */
       .card-empty-body {
         display: flex;
         flex-direction: column;
@@ -684,8 +657,6 @@
         color: white;
         border-color: var(--primary);
       }
-
-      /* ── MODAL ── */
       .modal-overlay {
         position: fixed;
         inset: 0;
@@ -844,8 +815,6 @@
       .mbtn.save:hover {
         background: var(--primary-hover);
       }
-
-      /* ── TOAST ── */
       .toast {
         position: fixed;
         bottom: 24px;
@@ -864,7 +833,6 @@
         display: block;
         animation: fadeIn 0.2s ease;
       }
-
       @keyframes spin {
         to {
           transform: rotate(360deg);
@@ -896,15 +864,11 @@
     </style>
   </head>
   <body>
-    <!-- ══════════════════════════════════════════
-     HEADER
-══════════════════════════════════════════ -->
     <div class="header">
       <div class="header-left">
         <img
           src="images/BCID_H_RGB_rev.png"
           alt="Government of British Columbia"
-          height="36"
           style="display: block; height: 36px"
         />
       </div>
@@ -938,11 +902,7 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════════
-     MAIN DASHBOARD
-══════════════════════════════════════════ -->
     <div class="main">
-      <!-- Summary Banner -->
       <div
         style="
           font-size: 13px;
@@ -998,7 +958,6 @@
         </div>
       </div>
 
-      <!-- Coordinator Bar -->
       <div class="coord-bar" id="coord-bar">
         <button class="coord-close" onclick="toggleCoord()" title="Close">
           ✕
@@ -1011,6 +970,7 @@
             <option value="yellow">🟡 Yellow — At Risk</option>
             <option value="red">🔴 Red — Off Track</option>
           </select>
+          <span class="coord-saving" id="coord-saving"></span>
         </div>
         <div class="coord-row">
           <span class="coord-label">News / announcement</span>
@@ -1170,7 +1130,6 @@
         </div>
       </div>
 
-      <!-- Filter Bar -->
       <div class="filter-bar">
         <span class="filter-label">Show:</span>
         <button class="filter-btn active-all" onclick="setFilter('all', this)">
@@ -1190,7 +1149,6 @@
         </button>
       </div>
 
-      <!-- Team Updates heading -->
       <div
         style="
           font-size: 13px;
@@ -1204,14 +1162,9 @@
       >
         🏢 Team Updates
       </div>
-
-      <!-- Bento Grid -->
       <div class="grid" id="grid"></div>
     </div>
 
-    <!-- ══════════════════════════════════════════
-     EDIT / ADD MODAL
-══════════════════════════════════════════ -->
     <div
       class="modal-overlay"
       id="modal-overlay"
@@ -1310,15 +1263,13 @@
     <div class="toast" id="toast"></div>
 
     <script>
-      // ══════════════════════════════════════════
-      // CONFIG — swap useSharePoint to true when IT gives you the client ID
-      // ══════════════════════════════════════════
       const CONFIG = {
-        useSharePoint: true, // ← live SharePoint mode on
+        useSharePoint: true,
         clientId: 'f5642799-c284-4221-92a5-06abf8795f97',
         sharePointSite:
           'https://bcgov.sharepoint.com/teams/12320-ConnectedServicesStrategicPriority',
         listName: 'Weekly SitRep Data',
+        coordListName: 'SitRep Coordinator',
       }
 
       const TEAMS = [
@@ -1339,22 +1290,23 @@
         'ACT',
       ]
 
-      let data = JSON.parse(localStorage.getItem('sitrep_v2') || '{}')
-      let coord = JSON.parse(localStorage.getItem('sitrep_coord') || '{}')
-      let currentFilter = 'all'
-      let selectedRYG = null
-      let selectedDeps = []
-      let coordOpen = false
+      let data = {},
+        coord = {},
+        currentFilter = 'all',
+        selectedRYG = null,
+        selectedDeps = [],
+        coordOpen = false
+      let coordItemId = null,
+        _siteId = null,
+        _coordListId = null,
+        saveTimer = null
 
-      // ── INIT ──
       function init() {
         document.getElementById('week-chip').textContent =
           'Week of ' + getWeekLabel()
         buildDepsPicker()
         if (CONFIG.useSharePoint) {
-          data = {} // clear local data — SharePoint is source of truth
           document.getElementById('csv-controls').style.display = 'none'
-          // Wait for MSAL to load before connecting
           if (window.msal) {
             loadFromSharePoint()
           } else {
@@ -1366,13 +1318,15 @@
             }, 100)
           }
         } else {
+          data = JSON.parse(localStorage.getItem('sitrep_v2') || '{}')
+          coord = JSON.parse(localStorage.getItem('sitrep_coord') || '{}')
           renderAll()
         }
       }
 
       function getWeekLabel() {
-        const d = new Date()
-        const day = d.getDay()
+        const d = new Date(),
+          day = d.getDay()
         const diff = d.getDate() - day + (day === 0 ? -6 : 1)
         d.setDate(diff)
         return d.toLocaleDateString('en-CA', {
@@ -1382,7 +1336,16 @@
         })
       }
 
-      // ── SHAREPOINT VIA MSAL ──
+      function getWeekStart() {
+        const d = new Date(),
+          day = d.getDay()
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+        d.setDate(diff)
+        d.setHours(0, 0, 0, 0)
+        return d
+      }
+
+      // ── MSAL ──
       const msalConfig = {
         auth: {
           clientId: CONFIG.clientId,
@@ -1392,20 +1355,19 @@
         },
         cache: { cacheLocation: 'sessionStorage' },
       }
-
       let msalInstance = null
 
       async function initMsal() {
         const { PublicClientApplication } = window.msal || {}
         if (!PublicClientApplication) {
-          showToast('MSAL library not loaded — check connection')
+          showToast('MSAL library not loaded')
           return false
         }
         msalInstance = new PublicClientApplication(msalConfig)
         await msalInstance.initialize()
         try {
-          const redirectResult = await msalInstance.handleRedirectPromise()
-          if (redirectResult) return redirectResult.accessToken
+          const r = await msalInstance.handleRedirectPromise()
+          if (r) return r.accessToken
         } catch (e) {}
         return true
       }
@@ -1415,23 +1377,19 @@
           'https://graph.microsoft.com/Sites.Read.All',
           'https://graph.microsoft.com/Sites.ReadWrite.All',
         ]
-
-        // 1. Try silent with existing cached account
         const accounts = msalInstance.getAllAccounts()
         if (accounts.length > 0) {
           try {
-            const result = await msalInstance.acquireTokenSilent({
+            const r = await msalInstance.acquireTokenSilent({
               scopes,
               account: accounts[0],
             })
-            return result.accessToken
+            return r.accessToken
           } catch (e) {}
         }
-
-        // 3. Last resort — popup (only fires if SSO silent fails)
         try {
-          const result = await msalInstance.loginPopup({ scopes })
-          return result.accessToken
+          const r = await msalInstance.loginPopup({ scopes })
+          return r.accessToken
         } catch (e) {
           throw new Error(
             'Sign in failed — please allow popups for this site and try again',
@@ -1439,6 +1397,7 @@
         }
       }
 
+      // ── LOAD TEAM DATA ──
       async function loadFromSharePoint() {
         setGridLoading()
         try {
@@ -1447,23 +1406,20 @@
             renderAll()
             return
           }
-
-          // If initResult is a string it's a token from redirect
           let token =
             typeof initResult === 'string' ? initResult : await getToken()
-          if (!token) return // redirecting to login — page will reload
+          if (!token) return
 
-          // Get site
           const siteResp = await fetch(
             `https://graph.microsoft.com/v1.0/sites/bcgov.sharepoint.com:/teams/12320-ConnectedServicesStrategicPriority`,
             { headers: { Authorization: `Bearer ${token}` } },
           )
           if (!siteResp.ok) throw new Error('Cannot access SharePoint site')
           const site = await siteResp.json()
+          _siteId = site.id
 
-          // Get list
           const listsResp = await fetch(
-            `https://graph.microsoft.com/v1.0/sites/${site.id}/lists?$filter=displayName eq '${CONFIG.listName}'`,
+            `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists?$filter=displayName eq '${CONFIG.listName}'`,
             { headers: { Authorization: `Bearer ${token}` } },
           )
           const lists = await listsResp.json()
@@ -1471,34 +1427,36 @@
             throw new Error(`List "${CONFIG.listName}" not found`)
           const listId = lists.value[0].id
 
-          // Get this week's items
-          const weekStart = getWeekStart().toISOString()
           const itemsResp = await fetch(
-            `https://graph.microsoft.com/v1.0/sites/${site.id}/lists/${listId}/items?$expand=fields&$top=200`,
+            `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${listId}/items?$expand=fields&$top=200`,
             { headers: { Authorization: `Bearer ${token}` } },
           )
           const items = await itemsResp.json()
 
-          // Get latest per team this week
           const byTeam = {}
-          const weekStartDate = getWeekStart()
           ;(items.value || []).forEach((item) => {
-            const f = item.fields
-            const team = f.TeamName
+            const f = item.fields,
+              team = f.TeamName
             if (!team) return
             const created = new Date(f.Created || item.createdDateTime)
             if (created < new Date('2026-01-01')) return
-            if (!byTeam[team]) byTeam[team] = f
+            if (!byTeam[team]) {
+              byTeam[team] = { fields: f, created }
+            } else if (created > byTeam[team].created) {
+              byTeam[team] = { fields: f, created }
+            }
+          })
+          Object.keys(byTeam).forEach((team) => {
+            byTeam[team] = byTeam[team].fields
           })
 
-          // Map SharePoint fields to our data format
           data = {}
           Object.entries(byTeam).forEach(([team, f]) => {
             let depsIn = []
             if (f.DependenciesIn) {
               try {
-                const parsed = JSON.parse(f.DependenciesIn.replace(/""/g, '"'))
-                depsIn = Array.isArray(parsed) ? parsed : [parsed]
+                const p = JSON.parse(f.DependenciesIn.replace(/""/g, '"'))
+                depsIn = Array.isArray(p) ? p : [p]
               } catch {
                 depsIn = f.DependenciesIn.replace(/[\[\]"]/g, '')
                   .split(/[;,]/)
@@ -1522,41 +1480,160 @@
           showToast(
             `✓ Loaded ${Object.keys(data).length} teams from SharePoint`,
           )
+          await loadCoordFromSharePoint(token)
         } catch (err) {
           document.getElementById('grid').innerHTML =
             `<div style="grid-column:1/-1;text-align:center;padding:48px 0;">
-      <div style="font-size:24px;margin-bottom:12px">🔐</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:6px;color:var(--text)">Sign in required</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">${err.message || 'Sign in with your BC Gov Microsoft 365 account'}</div>
-      <button onclick="loadFromSharePoint()" style="font-family:'BCSans',sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:999px;border:none;background:var(--primary);color:white;cursor:pointer;">Sign in with BC Gov account →</button>
-    </div>`
+            <div style="font-size:24px;margin-bottom:12px">🔐</div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:6px;color:var(--text)">Sign in required</div>
+            <div style="font-size:13px;color:var(--text2);margin-bottom:16px">${err.message || 'Sign in with your BC Gov Microsoft 365 account'}</div>
+            <button onclick="loadFromSharePoint()" style="font-family:'BCSans',sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:999px;border:none;background:var(--primary);color:white;cursor:pointer;">Sign in with BC Gov account →</button>
+          </div>`
         }
       }
 
-      function getWeekStart() {
-        const d = new Date()
-        const day = d.getDay()
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-        d.setDate(diff)
-        d.setHours(0, 0, 0, 0)
-        return d
+      // ── COORDINATOR SHAREPOINT ──
+      async function loadCoordFromSharePoint(token) {
+        try {
+          if (!token) token = await getToken()
+          if (!token || !_siteId) return
+          const listsResp = await fetch(
+            `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists?$filter=displayName eq '${CONFIG.coordListName}'`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          )
+          const lists = await listsResp.json()
+          if (!lists.value?.length) {
+            console.warn('SitRep Coordinator list not found')
+            return
+          }
+          _coordListId = lists.value[0].id
+
+          const weekLabel = getWeekLabel()
+          const itemsResp = await fetch(
+            `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items?$expand=fields&$top=50`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          )
+          const items = await itemsResp.json()
+          const match = (items.value || []).find(
+            (i) => i.fields.WeekOf === weekLabel,
+          )
+
+          if (match) {
+            coordItemId = match.id
+            const f = match.fields
+            coord = {
+              status: f.OverallStatus || '',
+              news: f.News || '',
+              meetings: safeJSON(f.Meetings, []),
+              featuredHighlights: safeJSON(f.FeaturedHighlights, []),
+              featuredBlockers: safeJSON(f.FeaturedBlockers, []),
+            }
+          } else {
+            coordItemId = null
+            coord = {}
+          }
+          updateSummary()
+          if (coordOpen) {
+            document.getElementById('coord-status').value = coord.status || ''
+            document.getElementById('coord-news').value = coord.news || ''
+            renderFeaturedChips()
+            renderMeetingsList()
+          }
+        } catch (e) {
+          console.warn('Could not load coordinator data:', e)
+        }
+      }
+
+      async function saveCoordToSharePoint() {
+        const savingEl = document.getElementById('coord-saving')
+        if (savingEl) savingEl.textContent = 'Saving...'
+        try {
+          const token = await getToken()
+          if (!token || !_siteId || !_coordListId) {
+            localStorage.setItem('sitrep_coord', JSON.stringify(coord))
+            if (savingEl) savingEl.textContent = ''
+            return
+          }
+          const fields = {
+            WeekOf: getWeekLabel(),
+            OverallStatus: coord.status || '',
+            News: coord.news || '',
+            Meetings: JSON.stringify(coord.meetings || []),
+            FeaturedHighlights: JSON.stringify(coord.featuredHighlights || []),
+            FeaturedBlockers: JSON.stringify(coord.featuredBlockers || []),
+          }
+          if (coordItemId) {
+            await fetch(
+              `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items/${coordItemId}/fields`,
+              {
+                method: 'PATCH',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(fields),
+              },
+            )
+          } else {
+            const resp = await fetch(
+              `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ fields }),
+              },
+            )
+            const created = await resp.json()
+            coordItemId = created.id
+          }
+          if (savingEl) savingEl.textContent = '✓ Saved'
+          setTimeout(() => {
+            if (savingEl) savingEl.textContent = ''
+          }, 2000)
+        } catch (e) {
+          console.warn('Could not save coordinator data:', e)
+          localStorage.setItem('sitrep_coord', JSON.stringify(coord))
+          if (savingEl) savingEl.textContent = '⚠ Saved locally'
+          setTimeout(() => {
+            if (savingEl) savingEl.textContent = ''
+          }, 3000)
+        }
+      }
+
+      function debounceSave() {
+        clearTimeout(saveTimer)
+        saveTimer = setTimeout(() => {
+          CONFIG.useSharePoint
+            ? saveCoordToSharePoint()
+            : localStorage.setItem('sitrep_coord', JSON.stringify(coord))
+        }, 800)
+      }
+
+      function safeJSON(str, fallback) {
+        if (!str) return fallback
+        try {
+          return JSON.parse(str)
+        } catch {
+          return fallback
+        }
       }
 
       function setGridLoading() {
         document.getElementById('grid').innerHTML =
           `<div style="grid-column:1/-1;text-align:center;padding:48px 0;">
-    <div style="width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px"></div>
-    <div style="font-size:13px;color:var(--text2)">Loading from SharePoint...</div>
-  </div>`
+          <div style="width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px"></div>
+          <div style="font-size:13px;color:var(--text2)">Loading from SharePoint...</div>
+        </div>`
       }
 
-      // ── RENDER ALL ──
       function renderAll() {
         updateSummary()
         renderGrid()
       }
 
-      // ── SUMMARY BANNER ──
       function updateSummary() {
         const teams = Object.values(data)
         const counts = { green: 0, yellow: 0, red: 0 }
@@ -1567,16 +1644,13 @@
         document.getElementById('y-count').textContent = counts.yellow
         document.getElementById('r-count').textContent = counts.red
 
-        // Weighted scoring
         let status = coord.status || ''
         if (!status) {
           const total = counts.green + counts.yellow + counts.red
           if (total === 0) {
             status = 'yellow'
           } else {
-            const score = counts.green * 2 + counts.yellow * 1
-            const maxScore = total * 2
-            const pct = (score / maxScore) * 100
+            const pct = ((counts.green * 2 + counts.yellow) / (total * 2)) * 100
             if (counts.red >= 3 || pct < 45) status = 'red'
             else if (pct >= 75) status = 'green'
             else status = 'yellow'
@@ -1591,12 +1665,11 @@
               ? '🟡 At Risk'
               : '🔴 Off Track'
 
-        // Top highlights
         const featHL = coord.featuredHighlights || []
         const hlTeams = [...teams]
           .sort((a, b) => {
-            const af = featHL.includes(a.team) ? 0 : 1
-            const bf = featHL.includes(b.team) ? 0 : 1
+            const af = featHL.includes(a.team) ? 0 : 1,
+              bf = featHL.includes(b.team) ? 0 : 1
             return (
               af - bf ||
               ['red', 'yellow', 'green'].indexOf(a.status) -
@@ -1614,12 +1687,11 @@
               .join('')
           : `<div class="summary-item"><span style="color:var(--text3);font-style:italic">No highlights yet</span></div>`
 
-        // Top blockers
         const featBL = coord.featuredBlockers || []
         const blTeams = [...teams]
           .sort((a, b) => {
-            const af = featBL.includes(a.team) ? 0 : 1
-            const bf = featBL.includes(b.team) ? 0 : 1
+            const af = featBL.includes(a.team) ? 0 : 1,
+              bf = featBL.includes(b.team) ? 0 : 1
             return (
               af - bf ||
               ['red', 'yellow', 'green'].indexOf(a.status) -
@@ -1637,19 +1709,14 @@
               .join('')
           : `<div class="summary-item"><span style="color:var(--text3);font-style:italic">No blockers this week</span></div>`
 
-        // News
         const news = coord.news || ''
         const newsEl = document.getElementById('news-el')
         newsEl.className = news ? 'news-text' : 'news-empty'
         newsEl.textContent = news || 'No announcements this week.'
-
-        // Meetings
         renderMeetingsDisplay()
       }
 
-      // ── BENTO GRID ──
       function renderGrid() {
-        // Deps-out map
         const depsOut = {}
         Object.values(data).forEach((t) => {
           ;(t.depsIn || []).forEach((dep) => {
@@ -1657,26 +1724,20 @@
             if (!depsOut[dep].includes(t.team)) depsOut[dep].push(t.team)
           })
         })
-
         const order = ['red', 'yellow', 'green']
-
-        // Determine which teams to show
         let teamsToShow = TEAMS
-        if (currentFilter === 'empty') {
-          teamsToShow = TEAMS.filter((name) => !data[name])
-        } else if (currentFilter !== 'all') {
+        if (currentFilter === 'empty')
+          teamsToShow = TEAMS.filter((n) => !data[n])
+        else if (currentFilter !== 'all')
           teamsToShow = TEAMS.filter(
-            (name) => data[name] && data[name].status === currentFilter,
+            (n) => data[n] && data[n].status === currentFilter,
           )
-        }
 
         if (teamsToShow.length === 0) {
           document.getElementById('grid').innerHTML =
             `<div style="grid-column:1/-1;text-align:center;padding:48px 0;color:var(--text3)"><div style="font-size:24px;margin-bottom:8px">✅</div><div style="font-size:14px;font-weight:600;color:var(--text)">All teams have submitted!</div></div>`
           return
         }
-
-        // Sort populated teams by RYG severity, empty teams at end
         const sorted = [...teamsToShow].sort((a, b) => {
           const ta = data[a],
             tb = data[b]
@@ -1685,24 +1746,18 @@
           if (!tb) return -1
           return order.indexOf(ta.status) - order.indexOf(tb.status)
         })
-
         document.getElementById('grid').innerHTML = sorted
           .map((teamName, i) => {
             const t = data[teamName]
-            if (!t) {
-              // Empty card
+            if (!t)
               return `<div class="card empty" style="animation-delay:${i * 0.03}s">
-        <div class="card-header">
-          <div class="card-team" style="color:var(--text3)">${esc(teamName)}</div>
-        </div>
-        <div class="card-empty-body">
-          <div class="card-empty-icon">📋</div>
-          <div class="card-empty-text">No data submitted yet</div>
-          <button class="card-add-btn" onclick="openModal('${esc(teamName)}')">+ Add data</button>
-        </div>
-      </div>`
-            }
-
+            <div class="card-header"><div class="card-team" style="color:var(--text3)">${esc(teamName)}</div></div>
+            <div class="card-empty-body">
+              <div class="card-empty-icon">📋</div>
+              <div class="card-empty-text">No data submitted yet</div>
+              <button class="card-add-btn" onclick="openModal('${esc(teamName)}')">+ Add data</button>
+            </div>
+          </div>`
             const s = t.status || 'yellow'
             const label =
               s === 'green'
@@ -1714,67 +1769,41 @@
               .map((d) => d.replace(/[\[\]"]/g, '').trim())
               .filter(Boolean)
             const dout = depsOut[teamName] || []
-
             return `<div class="card ${s}" style="animation-delay:${i * 0.03}s">
-      <div class="card-header">
-        <div class="card-team">${esc(teamName)}</div>
-        <div class="status-pill ${s}">${label}</div>
-      </div>
-      ${
-        t.highlight
-          ? `<div class="card-row">
-        <div class="card-lbl">Highlight</div>
-        <div class="card-val">${esc(t.highlight)}${t.initiativeNum ? ` <span style="font-size:10px;color:var(--text3)">#${esc(t.initiativeNum)}</span>` : ''}</div>
-      </div>`
-          : ''
-      }
-      ${
-        t.blocker
-          ? `<div class="card-row">
-        <div class="card-lbl">Blocker</div>
-        <div class="card-val">${esc(t.blocker)}${t.escalatorNum ? ` <span style="font-size:10px;color:var(--red)"> ↑${esc(t.escalatorNum)}</span>` : ''}</div>
-      </div>`
-          : ''
-      }
-      ${di.length > 0 || dout.length > 0 ? '<div class="card-divider"></div>' : ''}
-      ${di.length > 0 ? `<div class="card-row"><div class="card-lbl">Deps in</div><div class="deps-row">${di.map((d) => `<span class="dep-tag">${esc(d)}</span>`).join('')}</div></div>` : ''}
-      ${dout.length > 0 ? `<div class="card-row"><div class="card-lbl">Deps out</div><div class="deps-row">${dout.map((d) => `<span class="dep-tag out">${esc(d)}</span>`).join('')}</div></div>` : ''}
-      ${t.summary ? `<div class="card-divider"></div><div class="card-summary">${esc(t.summary)}</div>` : ''}
-      <button class="card-edit-btn" onclick="openModal('${esc(teamName)}')" title="Edit">✏️</button>
-    </div>`
+            <div class="card-header"><div class="card-team">${esc(teamName)}</div><div class="status-pill ${s}">${label}</div></div>
+            ${t.highlight ? `<div class="card-row"><div class="card-lbl">Highlight</div><div class="card-val">${esc(t.highlight)}${t.initiativeNum ? ` <span style="font-size:10px;color:var(--text3)">#${esc(t.initiativeNum)}</span>` : ''}</div></div>` : ''}
+            ${t.blocker ? `<div class="card-row"><div class="card-lbl">Blocker</div><div class="card-val">${esc(t.blocker)}${t.escalatorNum ? ` <span style="font-size:10px;color:var(--red)"> ↑${esc(t.escalatorNum)}</span>` : ''}</div></div>` : ''}
+            ${di.length > 0 || dout.length > 0 ? '<div class="card-divider"></div>' : ''}
+            ${di.length > 0 ? `<div class="card-row"><div class="card-lbl">Deps in</div><div class="deps-row">${di.map((d) => `<span class="dep-tag">${esc(d)}</span>`).join('')}</div></div>` : ''}
+            ${dout.length > 0 ? `<div class="card-row"><div class="card-lbl">Deps out</div><div class="deps-row">${dout.map((d) => `<span class="dep-tag out">${esc(d)}</span>`).join('')}</div></div>` : ''}
+            ${t.summary ? `<div class="card-divider"></div><div class="card-summary">${esc(t.summary)}</div>` : ''}
+            <button class="card-edit-btn" onclick="openModal('${esc(teamName)}')" title="Edit">✏️</button>
+          </div>`
           })
           .join('')
       }
 
-      // ── MODAL ──
       function openModal(teamName) {
         const t = data[teamName]
         document.getElementById('modal-title').textContent = t
           ? `Edit — ${teamName}`
           : `Add data — ${teamName}`
         document.getElementById('f-team').value = teamName
-
-        // Pre-fill if data exists
         document.getElementById('f-highlight').value = t?.highlight || ''
         document.getElementById('f-blocker').value = t?.blocker || ''
         document.getElementById('f-init').value = t?.initiativeNum || ''
         document.getElementById('f-esc').value = t?.escalatorNum || ''
         document.getElementById('f-summary').value = t?.summary || ''
-
-        // RYG
         selectedRYG = t?.status || null
         ;['green', 'yellow', 'red'].forEach((x) => {
           document.getElementById('r' + x[0]).className =
             'ryg-opt' + (x === selectedRYG ? ' sel-' + x : '')
         })
-
-        // Deps
         selectedDeps = [...(t?.depsIn || [])]
         TEAMS.forEach((tm) => {
-          const el = document.getElementById('dep-' + tm)
+          const el = document.getElementById('dep-' + tm.replace(/\//g, '-'))
           if (el) el.classList.toggle('on', selectedDeps.includes(tm))
         })
-
         document.getElementById('modal-overlay').classList.add('show')
         document.body.style.overflow = 'hidden'
       }
@@ -1785,7 +1814,6 @@
         selectedRYG = null
         selectedDeps = []
       }
-
       function closeModalOutside(e) {
         if (e.target === document.getElementById('modal-overlay')) closeModal()
       }
@@ -1806,14 +1834,14 @@
           depsIn: [...selectedDeps],
           summary: document.getElementById('f-summary').value.trim(),
         }
-        localStorage.setItem('sitrep_v2', JSON.stringify(data))
+        if (!CONFIG.useSharePoint)
+          localStorage.setItem('sitrep_v2', JSON.stringify(data))
         closeModal()
         renderAll()
         renderFeaturedChips()
         showToast('✓ ' + team + ' saved!')
       }
 
-      // ── DEPS PICKER ──
       function buildDepsPicker() {
         document.getElementById('deps-picker').innerHTML = TEAMS.map(
           (t) =>
@@ -1825,8 +1853,7 @@
         const idx = selectedDeps.indexOf(team)
         if (idx >= 0) selectedDeps.splice(idx, 1)
         else selectedDeps.push(team)
-        const id = 'dep-' + team.replace(/\//g, '-')
-        const el = document.getElementById(id)
+        const el = document.getElementById('dep-' + team.replace(/\//g, '-'))
         if (el) el.classList.toggle('on', selectedDeps.includes(team))
       }
 
@@ -1838,7 +1865,6 @@
         })
       }
 
-      // ── COORDINATOR ──
       function toggleCoord() {
         coordOpen = !coordOpen
         document.getElementById('coord-bar').classList.toggle('show', coordOpen)
@@ -1853,14 +1879,14 @@
       function saveCoord() {
         coord.status = document.getElementById('coord-status').value
         coord.news = document.getElementById('coord-news').value
-        localStorage.setItem('sitrep_coord', JSON.stringify(coord))
+        debounceSave()
         updateSummary()
       }
 
       function renderFeaturedChips() {
         const teams = Object.values(data)
-        const featHL = coord.featuredHighlights || []
-        const featBL = coord.featuredBlockers || []
+        const featHL = coord.featuredHighlights || [],
+          featBL = coord.featuredBlockers || []
         document.getElementById('feat-hl-chips').innerHTML =
           teams
             .filter((t) => t.highlight)
@@ -1887,23 +1913,22 @@
         const idx = coord[key].indexOf(team)
         if (idx >= 0) coord[key].splice(idx, 1)
         else coord[key].push(team)
-        localStorage.setItem('sitrep_coord', JSON.stringify(coord))
+        debounceSave()
         renderFeaturedChips()
         updateSummary()
       }
 
-      // ── MEETINGS ──
       function addMeeting() {
-        const title = document.getElementById('mtg-title').value.trim()
-        const time = document.getElementById('mtg-time').value.trim()
-        const link = document.getElementById('mtg-link').value.trim()
+        const title = document.getElementById('mtg-title').value.trim(),
+          time = document.getElementById('mtg-time').value.trim(),
+          link = document.getElementById('mtg-link').value.trim()
         if (!title) {
           showToast('Please enter a meeting title')
           return
         }
         if (!coord.meetings) coord.meetings = []
         coord.meetings.push({ title, time, link, id: Date.now() })
-        localStorage.setItem('sitrep_coord', JSON.stringify(coord))
+        debounceSave()
         document.getElementById('mtg-title').value = ''
         document.getElementById('mtg-time').value = ''
         document.getElementById('mtg-link').value = ''
@@ -1914,14 +1939,14 @@
 
       function removeMeeting(id) {
         coord.meetings = (coord.meetings || []).filter((m) => m.id !== id)
-        localStorage.setItem('sitrep_coord', JSON.stringify(coord))
+        debounceSave()
         renderMeetingsList()
         updateSummary()
       }
 
       function renderMeetingsList() {
-        const meetings = coord.meetings || []
-        const el = document.getElementById('meetings-list')
+        const meetings = coord.meetings || [],
+          el = document.getElementById('meetings-list')
         if (!el) return
         el.innerHTML = meetings.length
           ? meetings
@@ -1929,37 +1954,36 @@
                 (
                   m,
                 ) => `<div style="display:flex;align-items:center;gap:8px;background:white;border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;">
-        <span style="flex:1;font-weight:600">${esc(m.title)}</span>
-        ${m.time ? `<span style="color:var(--text3);font-size:11px">${esc(m.time)}</span>` : ''}
-        ${m.link ? `<a href="${esc(m.link)}" target="_blank" style="font-size:11px;color:var(--link)">🔗 Link</a>` : ''}
-        <button onclick="removeMeeting(${m.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;" title="Remove">✕</button>
-      </div>`,
+          <span style="flex:1;font-weight:600">${esc(m.title)}</span>
+          ${m.time ? `<span style="color:var(--text3);font-size:11px">${esc(m.time)}</span>` : ''}
+          ${m.link ? `<a href="${esc(m.link)}" target="_blank" style="font-size:11px;color:var(--link)">🔗 Link</a>` : ''}
+          <button onclick="removeMeeting(${m.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;" title="Remove">✕</button>
+        </div>`,
               )
               .join('')
           : '<span style="font-size:12px;color:var(--text3)">No meetings added yet</span>'
       }
 
       function renderMeetingsDisplay() {
-        const meetings = coord.meetings || []
-        const el = document.getElementById('meetings-display')
+        const meetings = coord.meetings || [],
+          el = document.getElementById('meetings-display')
         if (!el) return
         el.innerHTML = meetings.length
           ? meetings
               .map(
                 (m) => `<div class="meeting-chip">
-        <span class="meeting-chip-icon">📅</span>
-        <div style="display:flex;flex-direction:column;gap:1px;">
-          <span class="meeting-chip-title">${esc(m.title)}</span>
-          ${m.time ? `<span class="meeting-chip-time">${esc(m.time)}</span>` : ''}
-        </div>
-        ${m.link ? `<a href="${esc(m.link)}" target="_blank" class="meeting-chip-link">Join →</a>` : ''}
-      </div>`,
+          <span style="font-size:14px">📅</span>
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <span class="meeting-chip-title">${esc(m.title)}</span>
+            ${m.time ? `<span class="meeting-chip-time">${esc(m.time)}</span>` : ''}
+          </div>
+          ${m.link ? `<a href="${esc(m.link)}" target="_blank" class="meeting-chip-link">Join →</a>` : ''}
+        </div>`,
               )
               .join('')
           : '<span class="meeting-empty">No meetings added yet.</span>'
       }
 
-      // ── CSV UPLOAD ──
       function uploadCSV(event) {
         const file = event.target.files[0]
         if (!file) return
@@ -1994,10 +2018,8 @@
             let depsIn = []
             if (row.DependenciesIn) {
               try {
-                const parsed = JSON.parse(
-                  row.DependenciesIn.replace(/""/g, '"'),
-                )
-                depsIn = Array.isArray(parsed) ? parsed : [parsed]
+                const p = JSON.parse(row.DependenciesIn.replace(/""/g, '"'))
+                depsIn = Array.isArray(p) ? p : [p]
               } catch {
                 depsIn = row.DependenciesIn.replace(/[\[\]"]/g, '')
                   .split(/[;,]/)
@@ -2025,7 +2047,6 @@
         reader.readAsText(file)
       }
 
-      // ── CLEAR ──
       function clearAll() {
         if (
           !confirm('Clear all team data for this week? This cannot be undone.')
@@ -2037,7 +2058,6 @@
         showToast('Week cleared')
       }
 
-      // ── FILTER ──
       function setFilter(f, btn) {
         currentFilter = f
         document
@@ -2047,7 +2067,6 @@
         renderGrid()
       }
 
-      // ── UTILS ──
       function showToast(msg) {
         const t = document.getElementById('toast')
         t.textContent = msg
@@ -2063,7 +2082,6 @@
           .replace(/"/g, '&quot;')
       }
 
-      // Keyboard close modal
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeModal()
       })
