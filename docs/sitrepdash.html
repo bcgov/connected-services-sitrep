@@ -1860,14 +1860,9 @@
             `✓ Loaded ${Object.keys(data).length} teams from SharePoint`,
           )
           await loadCoordFromSharePoint(token)
+          showFullPageState('loaded')
         } catch (err) {
-          document.getElementById('grid').innerHTML =
-            `<div style="grid-column:1/-1;text-align:center;padding:48px 0;">
-          <div style="font-size:24px;margin-bottom:12px" aria-hidden="true">🔐</div>
-          <div style="font-size:15px;font-weight:700;margin-bottom:6px;color:var(--text)">Sign in required</div>
-          <div style="font-size:13px;color:var(--text2);margin-bottom:16px">${err.message || 'Sign in with your BC Gov Microsoft 365 account'}</div>
-          <button onclick="loadFromSharePoint()" style="font-family:'BCSans',sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:999px;border:none;background:var(--primary);color:white;cursor:pointer;" aria-label="Sign in to load dashboard">Sign in with BC Gov account →</button>
-        </div>`
+          showFullPageState('signin')
         }
       }
 
@@ -2064,11 +2059,43 @@
       }
 
       function setGridLoading() {
-        document.getElementById('grid').innerHTML =
-          `<div style="grid-column:1/-1;text-align:center;padding:48px 0;" role="status" aria-label="Loading">
-        <div style="width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px" aria-hidden="true"></div>
-        <div style="font-size:13px;color:var(--text2)">Loading from SharePoint...</div>
-      </div>`
+        showFullPageState('loading')
+      }
+
+      function showFullPageState(state, errorMsg) {
+        const summary =
+          document.getElementById('summary-banner') ||
+          document.querySelector('.summary')
+        const coordBar = document.getElementById('coord-bar')
+        const filterBar = document.querySelector('.filter-bar')
+        const sectionHeading = document.querySelector('[aria-hidden="true"]')
+        const grid = document.getElementById('grid')
+
+        // Hide dashboard chrome when not authenticated
+        const authenticated = state === 'loaded'
+        if (summary) summary.style.display = authenticated ? '' : 'none'
+        if (coordBar) coordBar.style.display = authenticated ? '' : 'none'
+        if (filterBar) filterBar.style.display = authenticated ? '' : 'none'
+        document
+          .querySelectorAll('.section-heading')
+          .forEach((el) => (el.style.display = authenticated ? '' : 'none'))
+
+        if (state === 'loading') {
+          grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:80px 20px;" role="status" aria-label="Loading">
+      <div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px" aria-hidden="true"></div>
+      <div style="font-size:14px;color:var(--text2)">Connecting to SharePoint...</div>
+    </div>`
+        } else if (state === 'signin') {
+          grid.innerHTML = `<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px 20px;">
+      <img src="images/BCID_H_RGB_pos.png" alt="" style="height:48px;margin-bottom:32px;opacity:0.8" aria-hidden="true"/>
+      <h2 style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px;letter-spacing:-0.02em;">Connected Services SitRep</h2>
+      <p style="font-size:14px;color:var(--text2);margin-bottom:32px;max-width:380px;line-height:1.6;">Sign in with your BC Gov Microsoft 365 account to view and contribute to the weekly status dashboard.</p>
+      <button onclick="loadFromSharePoint()" style="font-family:'BCSans',sans-serif;font-size:14px;font-weight:700;padding:14px 32px;border-radius:var(--radius-pill);border:none;background:var(--primary);color:white;cursor:pointer;box-shadow:0 2px 8px rgba(1,51,102,0.3);" aria-label="Sign in with BC Gov account">
+        Sign in with BC Gov account →
+      </button>
+      <p style="font-size:11px;color:var(--text3);margin-top:20px;">Your data is stored securely in SharePoint</p>
+    </div>`
+        }
       }
 
       function renderAll() {
