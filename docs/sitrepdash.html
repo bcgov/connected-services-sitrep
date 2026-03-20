@@ -1783,6 +1783,14 @@
             renderAll()
             return
           }
+
+          // Check if already signed in — if not, show sign in screen immediately
+          const accounts = msalInstance.getAllAccounts()
+          if (accounts.length === 0) {
+            showFullPageState('signin')
+            return
+          }
+
           let token =
             typeof initResult === 'string' ? initResult : await getToken()
           if (!token) return
