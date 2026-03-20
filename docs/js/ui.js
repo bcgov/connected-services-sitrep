@@ -50,6 +50,17 @@ function openModal(teamName) {
       el.setAttribute('aria-pressed', selectedDeps.includes(tm).toString())
     }
   })
+  // Populate week picker
+  const [prev, curr, next] = getWeekOptions()
+  const weekSel = document.getElementById('f-week')
+  weekSel.innerHTML = `
+    <option value="${prev}">${prev} (last week)</option>
+    <option value="${curr}" selected>${curr} (this week)</option>
+    <option value="${next}">${next} (next week)</option>
+  `
+  // If editing an existing entry keep its week, otherwise default to this week
+  weekSel.value = t?._weekOf || curr
+
   document.getElementById('modal-overlay').classList.add('show')
   document.body.style.overflow = 'hidden'
   setTimeout(() => document.getElementById('f-team').focus(), 50)
@@ -78,6 +89,7 @@ function saveTeam() {
     escalatorNum: document.getElementById('f-esc').value.trim(),
     depsIn: [...selectedDeps],
     summary: document.getElementById('f-summary').value.trim(),
+    _weekOf: document.getElementById('f-week').value,
     _spId: data[team]?._spId || null,
   }
   data[team] = teamData

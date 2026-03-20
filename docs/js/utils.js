@@ -38,6 +38,16 @@ function parseDepsIn(raw) {
   }
 }
 
+function getWeekOptions() {
+  // Returns [lastWeek, thisWeek, nextWeek] as en-CA date strings
+  return [-1, 0, 1].map(offset => {
+    const d = new Date(), day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1) + (offset * 7)
+    d.setDate(diff)
+    return d.toLocaleDateString('en-CA', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  })
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast')
   t.textContent = msg

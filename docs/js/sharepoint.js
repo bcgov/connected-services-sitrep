@@ -119,6 +119,7 @@ async function saveTeamToSharePoint(team, teamData) {
     const token = await getToken()
     const fields = {
       TeamName: team,
+      WeekOf: teamData._weekOf || getWeekLabel(),
       OverallStatus: teamData.status.charAt(0).toUpperCase() + teamData.status.slice(1),
       Highlight: teamData.highlight,
       Blocker: teamData.blocker,
