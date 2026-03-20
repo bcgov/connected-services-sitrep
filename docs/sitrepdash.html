@@ -1775,6 +1775,24 @@
       }
 
       // ── LOAD TEAM DATA ──
+      async function signIn() {
+        try {
+          const initResult = await initMsal()
+          if (!initResult) {
+            showToast('MSAL not loaded')
+            return
+          }
+          const scopes = [
+            'https://graph.microsoft.com/Sites.Read.All',
+            'https://graph.microsoft.com/Sites.ReadWrite.All',
+          ]
+          await msalInstance.loginPopup({ scopes })
+          loadFromSharePoint()
+        } catch (e) {
+          showToast('Sign in failed — please allow popups and try again')
+        }
+      }
+
       async function loadFromSharePoint() {
         setGridLoading()
         try {
@@ -2098,7 +2116,7 @@
       <img src="images/BCID_H_RGB_pos.png" alt="" style="height:48px;margin-bottom:32px;opacity:0.8" aria-hidden="true"/>
       <h2 style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px;letter-spacing:-0.02em;">Connected Services SitRep</h2>
       <p style="font-size:14px;color:var(--text2);margin-bottom:32px;max-width:380px;line-height:1.6;">Sign in with your BC Gov Microsoft 365 account to view and contribute to the weekly status dashboard.</p>
-      <button onclick="loadFromSharePoint()" style="font-family:'BCSans',sans-serif;font-size:14px;font-weight:700;padding:14px 32px;border-radius:var(--radius-pill);border:none;background:var(--primary);color:white;cursor:pointer;box-shadow:0 2px 8px rgba(1,51,102,0.3);" aria-label="Sign in with BC Gov account">
+      <button onclick="signIn()" style="font-family:'BCSans',sans-serif;font-size:14px;font-weight:700;padding:14px 32px;border-radius:var(--radius-pill);border:none;background:var(--primary);color:white;cursor:pointer;box-shadow:0 2px 8px rgba(1,51,102,0.3);" aria-label="Sign in with BC Gov account">
         Sign in with BC Gov account →
       </button>
       <p style="font-size:11px;color:var(--text3);margin-top:20px;">Your data is stored securely in SharePoint</p>
