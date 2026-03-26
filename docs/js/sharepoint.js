@@ -91,12 +91,15 @@ async function loadFromSharePoint() {
     const currentWeek = getWeekLabel()
     const weekStart = getWeekStart()
     const byTeam = {}
+    console.log('currentWeek:', currentWeek, 'weekStart:', weekStart)
+    let sampleWeekOfs = []
     allHistoryItems.forEach((item) => {
       const f = item.fields,
         team = f.TeamName
       if (!team) return
       const created = new Date(f.Created || item.createdDateTime)
       const weekOf = f.WeekOf || ''
+      if (sampleWeekOfs.length < 5) sampleWeekOfs.push({ team, weekOf, created })
       const belongsToThisWeek =
         weekOf && weekOf !== currentWeek
           ? false
@@ -108,6 +111,8 @@ async function loadFromSharePoint() {
         byTeam[team] = { fields: f, created, id: item.id }
       }
     })
+    console.log('sample entries:', sampleWeekOfs)
+    console.log('filtered to this week:', Object.keys(byTeam))
 
     data = {}
     Object.entries(byTeam).forEach(([team, { fields: f, id }]) => {
