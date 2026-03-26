@@ -11,9 +11,7 @@ function showFullPageState(state) {
   if (summary) summary.style.display = authenticated ? '' : 'none'
   if (coordBar) coordBar.style.display = authenticated ? '' : 'none'
   if (filterBar) filterBar.style.display = authenticated ? '' : 'none'
-  document
-    .querySelectorAll('.section-heading')
-    .forEach((el) => (el.style.display = authenticated ? '' : 'none'))
+  document.querySelectorAll('.section-heading').forEach(el => el.style.display = authenticated ? '' : 'none')
 
   if (state === 'loading') {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:80px 20px;" role="status" aria-label="Loading">
@@ -42,17 +40,11 @@ async function loadFromSharePoint() {
   setGridLoading()
   try {
     const initResult = await initMsal()
-    if (!initResult) {
-      renderAll()
-      return
-    }
+    if (!initResult) { renderAll(); return }
 
     // Not signed in → show sign in screen
     const accounts = msalInstance.getAllAccounts()
-    if (accounts.length === 0) {
-      showFullPageState('signin')
-      return
-    }
+    if (accounts.length === 0) { showFullPageState('signin'); return }
 
     let token = typeof initResult === 'string' ? initResult : await getToken()
     if (!token) return
@@ -60,7 +52,7 @@ async function loadFromSharePoint() {
     // Resolve site
     const siteResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/bcgov.sharepoint.com:/teams/12320-ConnectedServicesStrategicPriority`,
-      { headers: { Authorization: `Bearer ${token}` } },
+      { headers: { Authorization: `Bearer ${token}` } }
     )
     if (!siteResp.ok) throw new Error('Cannot access SharePoint site')
     const site = await siteResp.json()
@@ -69,49 +61,37 @@ async function loadFromSharePoint() {
     // Resolve team data list
     const listsResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists?$filter=displayName eq '${CONFIG.listName}'`,
-      { headers: { Authorization: `Bearer ${token}` } },
+      { headers: { Authorization: `Bearer ${token}` } }
     )
     const lists = await listsResp.json()
-    if (!lists.value?.length)
-      throw new Error(`List "${CONFIG.listName}" not found`)
+    if (!lists.value?.length) throw new Error(`List "${CONFIG.listName}" not found`)
     _teamListId = lists.value[0].id
 
     // Fetch all items
     const itemsResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$expand=fields&$top=500`,
-      { headers: { Authorization: `Bearer ${token}` } },
+      { headers: { Authorization: `Bearer ${token}` } }
     )
     const items = await itemsResp.json()
     allHistoryItems = items.value || []
 
-    // Latest item per team for THIS week only
+    // Latest item per team for THIS week only.
+    // Belongs to this week if:
+    //   (a) WeekOf field matches this week label (dashboard edits / week-picker), OR
+    //   (b) no WeekOf and created on or after this Monday 00:00 local time (form submissions)
     const currentWeek = getWeekLabel()
+    const weekStart = getWeekStart()
     const byTeam = {}
-    allHistoryItems.forEach((item) => {
-      const f = item.fields,
-        team = f.TeamName
+    allHistoryItems.forEach(item => {
+      const f = item.fields, team = f.TeamName
       if (!team) return
-      // Match on WeekOf field if present, otherwise fall back to created date
-      const itemWeek =
-        f.WeekOf ||
-        (() => {
-          const d = new Date(f.Created || item.createdDateTime),
-            day = d.getDay()
-          const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-          d.setDate(diff)
-          return d.toLocaleDateString('en-CA', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          })
-        })()
-      if (itemWeek !== currentWeek) return
       const created = new Date(f.Created || item.createdDateTime)
-      if (!byTeam[team]) {
-        byTeam[team] = { fields: f, created, id: item.id }
-      } else if (created > byTeam[team].created) {
-        byTeam[team] = { fields: f, created, id: item.id }
-      }
+      const belongsToThisWeek = f.WeekOf
+        ? f.WeekOf === currentWeek
+        : created >= weekStart
+      if (!belongsToThisWeek) return
+      if (!byTeam[team]) { byTeam[team] = { fields: f, created, id: item.id } }
+      else if (created > byTeam[team].created) { byTeam[team] = { fields: f, created, id: item.id } }
     })
 
     data = {}
@@ -148,8 +128,7 @@ async function saveTeamToSharePoint(team, teamData) {
     const fields = {
       TeamName: team,
       WeekOf: teamData._weekOf || getWeekLabel(),
-      OverallStatus:
-        teamData.status.charAt(0).toUpperCase() + teamData.status.slice(1),
+      OverallStatus: teamData.status.charAt(0).toUpperCase() + teamData.status.slice(1),
       Highlight: teamData.highlight,
       Blocker: teamData.blocker,
       InitiativeNumber: teamData.initiativeNum,
@@ -160,40 +139,22 @@ async function saveTeamToSharePoint(team, teamData) {
     if (teamData._spId) {
       await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items/${teamData._spId}/fields`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(fields),
-        },
+        { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(fields) }
       )
     } else {
       const resp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ fields }),
-        },
+        { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }) }
       )
       const created = await resp.json()
       data[team]._spId = created.id
     }
     if (statusEl) statusEl.textContent = '✓ Saved to SharePoint'
-    setTimeout(() => {
-      if (statusEl) statusEl.textContent = ''
-    }, 2500)
+    setTimeout(() => { if (statusEl) statusEl.textContent = '' }, 2500)
   } catch (e) {
     console.warn('Could not save team to SharePoint:', e)
     if (statusEl) statusEl.textContent = '⚠ SharePoint save failed'
-    setTimeout(() => {
-      if (statusEl) statusEl.textContent = ''
-    }, 3000)
+    setTimeout(() => { if (statusEl) statusEl.textContent = '' }, 3000)
   }
 }
 
@@ -205,22 +166,19 @@ async function loadCoordFromSharePoint(token) {
 
     const listsResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists?$filter=displayName eq '${CONFIG.coordListName}'`,
-      { headers: { Authorization: `Bearer ${token}` } },
+      { headers: { Authorization: `Bearer ${token}` } }
     )
     const lists = await listsResp.json()
-    if (!lists.value?.length) {
-      console.warn('SitRep Coordinator list not found')
-      return
-    }
+    if (!lists.value?.length) { console.warn('SitRep Coordinator list not found'); return }
     _coordListId = lists.value[0].id
 
     const weekLabel = getWeekLabel()
     const itemsResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items?$expand=fields&$top=50`,
-      { headers: { Authorization: `Bearer ${token}` } },
+      { headers: { Authorization: `Bearer ${token}` } }
     )
     const items = await itemsResp.json()
-    const match = (items.value || []).find((i) => i.fields.WeekOf === weekLabel)
+    const match = (items.value || []).find(i => i.fields.WeekOf === weekLabel)
 
     if (match) {
       coordItemId = match.id
@@ -269,41 +227,23 @@ async function saveCoordToSharePoint() {
     if (coordItemId) {
       await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items/${coordItemId}/fields`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(fields),
-        },
+        { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(fields) }
       )
     } else {
       const resp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ fields }),
-        },
+        { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }) }
       )
       const created = await resp.json()
       coordItemId = created.id
     }
     if (savingEl) savingEl.textContent = '✓ Saved'
-    setTimeout(() => {
-      if (savingEl) savingEl.textContent = ''
-    }, 2000)
+    setTimeout(() => { if (savingEl) savingEl.textContent = '' }, 2000)
   } catch (e) {
     console.warn('Could not save coordinator data:', e)
     localStorage.setItem('sitrep_coord', JSON.stringify(coord))
     if (savingEl) savingEl.textContent = '⚠ Saved locally'
-    setTimeout(() => {
-      if (savingEl) savingEl.textContent = ''
-    }, 3000)
+    setTimeout(() => { if (savingEl) savingEl.textContent = '' }, 3000)
   }
 }
 
