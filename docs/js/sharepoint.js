@@ -91,19 +91,33 @@ async function loadFromSharePoint() {
     const currentWeek = getWeekLabel()
     const weekStart = getWeekStart()
     const byTeam = {}
-    console.log('currentWeek:', currentWeek, 'weekStart:', weekStart)
-    let sampleWeekOfs = []
+
+    // Parse WeekOf to a Date for comparison (handles both YYYY-MM-DD and DD-MM-YYYY formats)
+    function parseWeekOf(weekOfStr) {
+      if (!weekOfStr) return null
+      const parts = weekOfStr.split('-')
+      if (parts.length !== 3) return null
+      // Try YYYY-MM-DD first
+      if (parts[0].length === 4) {
+        return new Date(parts[0], parseInt(parts[1]) - 1, parts[2])
+      }
+      // Otherwise assume DD-MM-YYYY
+      return new Date(parts[2], parseInt(parts[1]) - 1, parts[0])
+    }
+
     allHistoryItems.forEach((item) => {
       const f = item.fields,
         team = f.TeamName
       if (!team) return
       const created = new Date(f.Created || item.createdDateTime)
-      const weekOf = f.WeekOf || ''
-      if (sampleWeekOfs.length < 5) sampleWeekOfs.push({ team, weekOf, created })
-      const belongsToThisWeek =
-        weekOf && weekOf !== currentWeek
-          ? false
-          : weekOf === currentWeek || created >= weekStart
+      const weekOfDate = parseWeekOf(f.WeekOf)
+      const currentWeekDate = parseWeekOf(currentWeek)
+
+      // Compare week dates (both should be Monday of their respective weeks)
+      const belongsToThisWeek = weekOfDate && currentWeekDate
+        ? weekOfDate.getTime() === currentWeekDate.getTime()
+        : created >= weekStart
+
       if (!belongsToThisWeek) return
       if (!byTeam[team]) {
         byTeam[team] = { fields: f, created, id: item.id }
@@ -111,8 +125,6 @@ async function loadFromSharePoint() {
         byTeam[team] = { fields: f, created, id: item.id }
       }
     })
-    console.log('sample entries:', sampleWeekOfs)
-    console.log('filtered to this week:', Object.keys(byTeam))
 
     data = {}
     Object.entries(byTeam).forEach(([team, { fields: f, id }]) => {
