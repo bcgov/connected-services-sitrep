@@ -113,10 +113,8 @@ async function loadFromSharePoint() {
       const weekOfDate = parseWeekOf(f.WeekOf)
       const currentWeekDate = parseWeekOf(currentWeek)
 
-      // Compare week dates (both should be Monday of their respective weeks)
-      const belongsToThisWeek = weekOfDate && currentWeekDate
-        ? weekOfDate.getTime() === currentWeekDate.getTime()
-        : created >= weekStart
+      // Include if: WeekOf matches this week, OR entry was created this week
+      const belongsToThisWeek = (weekOfDate && currentWeekDate && weekOfDate.getTime() === currentWeekDate.getTime()) || created >= weekStart
 
       if (!belongsToThisWeek) return
       if (!byTeam[team]) {
