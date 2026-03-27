@@ -116,8 +116,6 @@ async function loadFromSharePoint() {
       // Include if: WeekOf matches this week, OR entry was created this week
       const belongsToThisWeek = (weekOfDate && currentWeekDate && weekOfDate.getTime() === currentWeekDate.getTime()) || created >= weekStart
 
-      console.log(`${team}: created=${created}, weekOf=${f.WeekOf}, weekStart=${weekStart}, weekOfDate=${weekOfDate}, currentWeekDate=${currentWeekDate}, belongs=${belongsToThisWeek}`)
-
       if (!belongsToThisWeek) return
       if (!byTeam[team]) {
         byTeam[team] = { fields: f, created, id: item.id }
