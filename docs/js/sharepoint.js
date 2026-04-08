@@ -235,7 +235,8 @@ async function saveTeamToSharePoint(team, teamData) {
     const token = await getToken()
     const fields = {
       TeamName: team,
-      WeekOf: teamData._weekOf || getWeekLabel(),
+      // Note: WeekOf is read-only in SharePoint, cannot be set directly
+      // It's managed by the form submission process
       OverallStatus:
         teamData.status.charAt(0).toUpperCase() + teamData.status.slice(1),
       Highlight: teamData.highlight,
@@ -291,9 +292,10 @@ async function saveTeamToSharePoint(team, teamData) {
     }, 2500)
   } catch (e) {
     console.error('[SP-SAVE] ERROR for team:', team, e)
-    console.error('[SP-SAVE] ERROR for team:', team, e.message, e)
     const userMsg = e.message.includes('429')
       ? 'Too many requests (server busy). Try again in a moment.'
+      : e.message.includes('read-only')
+        ? 'SharePoint field configuration issue (WeekOf is read-only). Contact IT support.'
       : e.message.includes('401')
         ? 'Authentication expired. Please refresh the page.'
         : e.message.includes('403')
@@ -301,7 +303,7 @@ async function saveTeamToSharePoint(team, teamData) {
           : `Save failed: ${e.message}`
 
     // Fallback to localStorage
-    const teamData = {
+    const localData = {
       team,
       status: teamData.status,
       highlight: teamData.highlight,
@@ -314,8 +316,8 @@ async function saveTeamToSharePoint(team, teamData) {
       _localOnly: true, // Flag to indicate this is local-only
       _savedAt: new Date().toISOString(),
     }
-    data[team] = teamData
-    localStorage.setItem('sitrep_team_' + team, JSON.stringify(teamData))
+    data[team] = localData
+    localStorage.setItem('sitrep_team_' + team, JSON.stringify(localData))
     renderGrid() // Update UI immediately
 
     const authInfo = debugAuth()
@@ -329,6 +331,7 @@ Time: ${new Date().toISOString()}
 
 Troubleshooting:
 • If you can see the dashboard but can't save, you may have read-only permissions
+• The 'WeekOf' field appears to be read-only - this is a SharePoint list configuration issue
 • Try refreshing the page to re-authenticate
 • Contact support with this error details`
     showErrorModal(
