@@ -571,7 +571,11 @@ async function addTeamToSharePoint(teamName) {
     // Sync to SharePoint
     await saveTeamsRegistry(token, TEAMS)
 
-    showToast(`✓ "${teamName}" added and synced.`)
+    showErrorModal(
+      '✅ Team Added Successfully',
+      `"${teamName}" has been added and is now available to all users.\n\n⚠️ Important Next Steps:\n\n• Update the MS Form to include "${teamName}" in the team selection question\n• Add "${teamName}" to dependency fields if applicable\n• The change will sync to all connected users automatically`,
+      '',
+    )
 
     console.log('[TEAM-MGMT] Team added and synced:', teamName)
   } catch (e) {
@@ -699,7 +703,12 @@ async function renameTeam(oldName, newName) {
 async function saveTeamsRegistry(token, teamsList) {
   // Create or update a registry item in SharePoint that tracks all teams
   // This allows other users/sessions to sync the team list
-  if (!_siteId || !_teamListId) return
+  if (!_siteId || !_teamListId) {
+    console.error('[TEAM-MGMT] Cannot save registry: _siteId or _teamListId not set')
+    return
+  }
+
+  console.log('[TEAM-MGMT] Saving teams registry:', teamsList)
 
   const fields = {
     Title: '__TEAMS_REGISTRY__',
@@ -715,8 +724,9 @@ async function saveTeamsRegistry(token, teamsList) {
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$expand=fields&$top=500`,
       { headers: { Authorization: `Bearer ${token}` } },
     )
-    if (!searchResp.ok)
-      throw new Error(`Registry search failed ${searchResp.status}`)
+    if (!searchResp.ok) {
+      throw new Error(`Registry search failed ${searchResp.status}: ${searchResp.statusText}`)
+    }
     const search = await searchResp.json()
     const registryItems = (search.value || []).filter(
       (item) =>
@@ -724,9 +734,12 @@ async function saveTeamsRegistry(token, teamsList) {
         item.fields?.TeamName === '__TEAMS_REGISTRY__',
     )
 
+    console.log('[TEAM-MGMT] Found registry items:', registryItems.length)
+
     if (registryItems.length > 0) {
       // Update existing
       const itemId = registryItems[0].id
+      console.log('[TEAM-MGMT] Updating existing registry item:', itemId)
       const updateResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items/${itemId}/fields`,
         {
@@ -738,9 +751,13 @@ async function saveTeamsRegistry(token, teamsList) {
           body: JSON.stringify(fields),
         },
       )
-      if (!updateResp.ok) throw new Error(`PATCH failed ${updateResp.status}`)
+      if (!updateResp.ok) {
+        throw new Error(`PATCH failed ${updateResp.status}: ${updateResp.statusText}`)
+      }
+      console.log('[TEAM-MGMT] Registry updated successfully')
     } else {
       // Create new
+      console.log('[TEAM-MGMT] Creating new registry item')
       const createResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items`,
         {
@@ -752,31 +769,42 @@ async function saveTeamsRegistry(token, teamsList) {
           body: JSON.stringify({ fields }),
         },
       )
-      if (!createResp.ok) throw new Error(`POST failed ${createResp.status}`)
+      if (!createResp.ok) {
+        throw new Error(`POST failed ${createResp.status}: ${createResp.statusText}`)
+      }
+      console.log('[TEAM-MGMT] Registry created successfully')
     }
   } catch (e) {
-    console.warn('[TEAM-MGMT] Could not save teams registry:', e.message)
+    console.error('[TEAM-MGMT] Could not save teams registry:', e.message)
     // Non-critical, continue anyway
   }
 }
 
 async function syncTeamsFromSharePoint(token) {
   // On load, check if there's an updated team list in SharePoint
-  if (!_siteId || !_teamListId) return
+  if (!_siteId || !_teamListId) {
+    console.warn('[TEAM-MGMT] Cannot sync teams: _siteId or _teamListId not set')
+    return
+  }
+
+  console.log('[TEAM-MGMT] Syncing teams from SharePoint...')
 
   try {
     const searchResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$expand=fields&$top=500`,
       { headers: { Authorization: `Bearer ${token}` } },
     )
-    if (!searchResp.ok)
-      throw new Error(`Registry fetch failed ${searchResp.status}`)
+    if (!searchResp.ok) {
+      throw new Error(`Registry fetch failed ${searchResp.status}: ${searchResp.statusText}`)
+    }
     const search = await searchResp.json()
     const registryItems = (search.value || []).filter(
       (item) =>
         item.fields?.Title === '__TEAMS_REGISTRY__' ||
         item.fields?.TeamName === '__TEAMS_REGISTRY__',
     )
+
+    console.log('[TEAM-MGMT] Found registry items for sync:', registryItems.length)
 
     if (registryItems.length > 0) {
       const registryItem = registryItems[0]
@@ -785,18 +813,25 @@ async function syncTeamsFromSharePoint(token) {
         try {
           const syncedTeams = JSON.parse(highlight)
           if (Array.isArray(syncedTeams)) {
-            TEAMS = syncedTeams
+            TEAMS.length = 0 // Clear the array
+            TEAMS.push(...syncedTeams) // Add all new teams
             TEAMS.sort()
             console.log('[TEAM-MGMT] Synced teams from SharePoint:', TEAMS)
             buildTeamSelect()
             buildDepsPicker()
             renderTeamsList()
             renderGrid()
+          } else {
+            console.warn('[TEAM-MGMT] Highlight field is not a valid array:', highlight)
           }
         } catch (e) {
-          console.warn('[TEAM-MGMT] Could not parse synced teams:', e)
+          console.warn('[TEAM-MGMT] Could not parse synced teams:', e.message)
         }
+      } else {
+        console.log('[TEAM-MGMT] No Highlight field in registry item')
       }
+    } else {
+      console.log('[TEAM-MGMT] No registry items found')
     }
   } catch (e) {
     console.warn('[TEAM-MGMT] Could not sync teams from SharePoint:', e.message)
