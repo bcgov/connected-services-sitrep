@@ -1,220 +1,695 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SitRep RYG Dashboard — Connected Services</title>
-  <link rel="stylesheet" href="css/sitrepdash.css"/>
-</head>
-<body>
-  <a class="skip-link" href="#main-content">Skip to main content</a>
-  <div aria-live="polite" aria-atomic="true" class="sr-only" id="live-region"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SitRep RYG Dashboard — Connected Services</title>
+    <link rel="stylesheet" href="css/sitrepdash.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div
+      aria-live="polite"
+      aria-atomic="true"
+      class="sr-only"
+      id="live-region"
+    ></div>
 
-  <header class="header" role="banner">
-    <div class="header-left">
-      <img src="images/BCID_H_RGB_rev.png" alt="Government of British Columbia" style="display:block;height:36px"/>
-    </div>
-    <div class="header-center">
-      <h1 class="header-title">SitRep RYG Dashboard</h1>
-      <div class="header-week" id="week-chip" aria-label="Current week"></div>
-    </div>
-    <div class="header-right">
-      <div id="csv-controls" style="display:flex;gap:8px;align-items:center">
-        <button class="hbtn" onclick="document.getElementById('csv-upload').click()" aria-label="Upload CSV file">📂 Upload CSV</button>
-        <input type="file" id="csv-upload" accept=".csv" style="display:none" onchange="uploadCSV(event)" aria-label="CSV file input"/>
-        <button class="hbtn danger" onclick="clearAll()" aria-label="Clear this week's data">🗑 Clear week</button>
+    <header class="header" role="banner">
+      <div class="header-left">
+        <img
+          src="images/BCID_H_RGB_rev.png"
+          alt="Government of British Columbia"
+          style="display: block; height: 36px"
+        />
       </div>
-      <button class="hbtn" id="history-btn" aria-pressed="false" onclick="toggleHistory()">📚 History</button>
-      <button class="hbtn" id="coord-btn" aria-pressed="false" aria-expanded="false" onclick="toggleCoord()">⚙️ Coordinator</button>
-    </div>
-  </header>
+      <div class="header-center">
+        <h1 class="header-title">SitRep RYG Dashboard</h1>
+        <div class="header-week" id="week-chip" aria-label="Current week"></div>
+      </div>
+      <div class="header-right">
+        <div
+          id="csv-controls"
+          style="display: flex; gap: 8px; align-items: center"
+        >
+          <button
+            class="hbtn"
+            onclick="document.getElementById('csv-upload').click()"
+            aria-label="Upload CSV file"
+          >
+            📂 Upload CSV
+          </button>
+          <input
+            type="file"
+            id="csv-upload"
+            accept=".csv"
+            style="display: none"
+            onchange="uploadCSV(event)"
+            aria-label="CSV file input"
+          />
+          <button
+            class="hbtn danger"
+            onclick="clearAll()"
+            aria-label="Clear this week's data"
+          >
+            🗑 Clear week
+          </button>
+        </div>
+        <button
+          class="hbtn"
+          id="history-btn"
+          aria-pressed="false"
+          onclick="toggleHistory()"
+        >
+          📚 History
+        </button>
+        <button
+          class="hbtn"
+          id="coord-btn"
+          aria-pressed="false"
+          aria-expanded="false"
+          onclick="toggleCoord()"
+        >
+          ⚙️ Coordinator
+        </button>
+      </div>
+    </header>
 
-  <main id="main-content">
-    <!-- DASHBOARD VIEW -->
-    <div class="main" id="dashboard-view">
-      <p class="section-heading" aria-hidden="true">📊 Weekly Program Summary</p>
-      <section aria-label="Program summary">
-        <div class="summary">
-          <div class="summary-top">
-            <div class="summary-cell">
-              <div class="summary-label" id="status-label">Program status</div>
-              <div class="overall-pill yellow" id="overall-pill" aria-labelledby="status-label">🟡 At Risk</div>
-              <div class="ryg-counts" aria-label="Team counts by status">
-                <span class="ryg-count"><span class="dot green" aria-hidden="true"></span><span id="g-count" aria-label="Green teams">0</span></span>
-                <span class="ryg-count"><span class="dot yellow" aria-hidden="true"></span><span id="y-count" aria-label="Yellow teams">0</span></span>
-                <span class="ryg-count"><span class="dot red" aria-hidden="true"></span><span id="r-count" aria-label="Red teams">0</span></span>
+    <main id="main-content">
+      <!-- DASHBOARD VIEW -->
+      <div class="main" id="dashboard-view">
+        <p class="section-heading" aria-hidden="true">
+          📊 Weekly Program Summary
+        </p>
+        <section aria-label="Program summary">
+          <div class="summary">
+            <div class="summary-top">
+              <div class="summary-cell">
+                <div class="summary-label" id="status-label">
+                  Program status
+                </div>
+                <div
+                  class="overall-pill yellow"
+                  id="overall-pill"
+                  aria-labelledby="status-label"
+                >
+                  🟡 At Risk
+                </div>
+                <div class="ryg-counts" aria-label="Team counts by status">
+                  <span class="ryg-count"
+                    ><span class="dot green" aria-hidden="true"></span
+                    ><span id="g-count" aria-label="Green teams">0</span></span
+                  >
+                  <span class="ryg-count"
+                    ><span class="dot yellow" aria-hidden="true"></span
+                    ><span id="y-count" aria-label="Yellow teams">0</span></span
+                  >
+                  <span class="ryg-count"
+                    ><span class="dot red" aria-hidden="true"></span
+                    ><span id="r-count" aria-label="Red teams">0</span></span
+                  >
+                </div>
+              </div>
+              <div
+                class="summary-divider"
+                role="separator"
+                aria-hidden="true"
+              ></div>
+              <div class="summary-cell">
+                <div class="summary-label">Top highlights</div>
+                <div
+                  class="summary-items"
+                  id="top-highlights"
+                  aria-live="polite"
+                ></div>
+              </div>
+              <div
+                class="summary-divider"
+                role="separator"
+                aria-hidden="true"
+              ></div>
+              <div class="summary-cell">
+                <div class="summary-label">Top blockers</div>
+                <div
+                  class="summary-items"
+                  id="top-blockers"
+                  aria-live="polite"
+                ></div>
               </div>
             </div>
-            <div class="summary-divider" role="separator" aria-hidden="true"></div>
-            <div class="summary-cell">
-              <div class="summary-label">Top highlights</div>
-              <div class="summary-items" id="top-highlights" aria-live="polite"></div>
+            <div class="summary-bottom">
+              <div class="summary-news-label">📢 News &amp; Announcements</div>
+              <div id="news-el" class="news-empty" aria-live="polite">
+                No announcements this week.
+              </div>
             </div>
-            <div class="summary-divider" role="separator" aria-hidden="true"></div>
-            <div class="summary-cell">
-              <div class="summary-label">Top blockers</div>
-              <div class="summary-items" id="top-blockers" aria-live="polite"></div>
-            </div>
-          </div>
-          <div class="summary-bottom">
-            <div class="summary-news-label">📢 News &amp; Announcements</div>
-            <div id="news-el" class="news-empty" aria-live="polite">No announcements this week.</div>
-          </div>
-          <div class="summary-meetings">
-            <div class="summary-news-label">📅 Meetings this week</div>
-            <div class="meeting-chips" id="meetings-display" aria-live="polite">
-              <span class="meeting-empty">No meetings added yet.</span>
+            <div class="summary-meetings">
+              <div class="summary-news-label">📅 Meetings this week</div>
+              <div
+                class="meeting-chips"
+                id="meetings-display"
+                aria-live="polite"
+              >
+                <span class="meeting-empty">No meetings added yet.</span>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Coordinator Bar -->
-      <section aria-label="Coordinator controls" id="coord-bar" class="coord-bar" aria-hidden="true">
-        <button class="coord-close" onclick="toggleCoord()" aria-label="Close coordinator panel">✕</button>
-        <div class="coord-row">
-          <label class="coord-label" for="coord-status">Override status</label>
-          <select class="coord-select" id="coord-status" onchange="saveCoord()">
-            <option value="">Auto (calculated)</option>
-            <option value="green">🟢 Green — On Track</option>
-            <option value="yellow">🟡 Yellow — At Risk</option>
-            <option value="red">🔴 Red — Off Track</option>
-          </select>
-          <span class="coord-saving" id="coord-saving" aria-live="polite"></span>
-        </div>
-        <div class="coord-row">
-          <label class="coord-label" for="coord-news">News / announcement</label>
-          <input class="coord-input" type="text" id="coord-news" placeholder="e.g. Sprint review Friday 2pm — all welcome" oninput="saveCoord()"/>
-        </div>
-        <div class="coord-row">
-          <span class="coord-label" id="feat-hl-label">Feature highlights</span>
-          <div class="coord-featured" id="feat-hl-chips" role="group" aria-labelledby="feat-hl-label"></div>
-        </div>
-        <div class="coord-row">
-          <span class="coord-label" id="feat-bl-label">Feature blockers</span>
-          <div class="coord-featured" id="feat-bl-chips" role="group" aria-labelledby="feat-bl-label"></div>
-        </div>
-        <div style="border-top:1px solid #bfdbfe;padding-top:12px;margin-top:4px;">
-          <div style="font-size:12px;font-weight:700;color:var(--blue-text);margin-bottom:10px;">📅 Meetings this week</div>
-          <div id="meetings-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;" aria-live="polite"></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
-            <div style="display:flex;flex-direction:column;gap:3px;flex:2;min-width:160px;">
-              <label for="mtg-title" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue-text)">Meeting title</label>
-              <input class="coord-input" type="text" id="mtg-title" placeholder="e.g. ADM Bi-weekly" style="min-width:0"/>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:3px;flex:2;min-width:140px;">
-              <label for="mtg-time" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue-text)">Date &amp; time</label>
-              <input class="coord-input" type="text" id="mtg-time" placeholder="e.g. Mon Mar 17, 2:30pm" style="min-width:0"/>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:3px;flex:2;min-width:140px;">
-              <label for="mtg-link" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue-text)">Link (optional)</label>
-              <input class="coord-input" type="text" id="mtg-link" placeholder="e.g. https://teams.microsoft.com/..." style="min-width:0"/>
-            </div>
-            <button onclick="addMeeting()" style="font-family:'BCSans',sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:var(--radius-pill);border:none;background:var(--primary);color:white;cursor:pointer;white-space:nowrap;flex-shrink:0;" aria-label="Add meeting to list">+ Add meeting</button>
+        <!-- Coordinator Bar -->
+        <section
+          aria-label="Coordinator controls"
+          id="coord-bar"
+          class="coord-bar"
+          aria-hidden="true"
+        >
+          <button
+            class="coord-close"
+            onclick="toggleCoord()"
+            aria-label="Close coordinator panel"
+          >
+            ✕
+          </button>
+          <div class="coord-row">
+            <label class="coord-label" for="coord-status"
+              >Override status</label
+            >
+            <select
+              class="coord-select"
+              id="coord-status"
+              onchange="saveCoord()"
+            >
+              <option value="">Auto (calculated)</option>
+              <option value="green">🟢 Green — On Track</option>
+              <option value="yellow">🟡 Yellow — At Risk</option>
+              <option value="red">🔴 Red — Off Track</option>
+            </select>
+            <span
+              class="coord-saving"
+              id="coord-saving"
+              aria-live="polite"
+            ></span>
           </div>
-        </div>
-      </section>
+          <div class="coord-row">
+            <label class="coord-label" for="coord-news"
+              >News / announcement</label
+            >
+            <input
+              class="coord-input"
+              type="text"
+              id="coord-news"
+              placeholder="e.g. Sprint review Friday 2pm — all welcome"
+              oninput="saveCoord()"
+            />
+          </div>
+          <div class="coord-row">
+            <span class="coord-label" id="feat-hl-label"
+              >Feature highlights</span
+            >
+            <div
+              class="coord-featured"
+              id="feat-hl-chips"
+              role="group"
+              aria-labelledby="feat-hl-label"
+            ></div>
+          </div>
+          <div class="coord-row">
+            <span class="coord-label" id="feat-bl-label">Feature blockers</span>
+            <div
+              class="coord-featured"
+              id="feat-bl-chips"
+              role="group"
+              aria-labelledby="feat-bl-label"
+            ></div>
+          </div>
+          <div
+            style="
+              border-top: 1px solid #bfdbfe;
+              padding-top: 12px;
+              margin-top: 4px;
+            "
+          >
+            <div
+              style="
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--blue-text);
+                margin-bottom: 10px;
+              "
+            >
+              � Manage Teams
+            </div>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px">
+              <input
+                type="text"
+                id="team-input"
+                placeholder="New team name..."
+                style="
+                  flex: 1;
+                  padding: 6px 8px;
+                  font-size: 12px;
+                  border: 1px solid #ccc;
+                  border-radius: 4px;
+                "
+              />
+              <button
+                type="button"
+                onclick="openAddTeamModal()"
+                style="
+                  padding: 6px 12px;
+                  font-size: 12px;
+                  background: #003366;
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-weight: 600;
+                "
+              >
+                Add Team
+              </button>
+            </div>
+            <div
+              id="teams-list"
+              style="max-height: 150px; overflow-y: auto"
+            ></div>
+            <div
+              style="
+                font-size: 11px;
+                color: var(--text3);
+                margin-top: 8px;
+                line-height: 1.4;
+              "
+            >
+              ⓘ Adding/removing teams will sync to all users. Remember to update
+              the MS Form team selection.
+            </div>
+          </div>
+          <div
+            style="
+              border-top: 1px solid #bfdbfe;
+              padding-top: 12px;
+              margin-top: 4px;
+            "
+          >
+            <div
+              style="
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--blue-text);
+                margin-bottom: 10px;
+              "
+            >
+              �📅 Meetings this week
+            </div>
+            <div
+              id="meetings-list"
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                margin-bottom: 10px;
+              "
+              aria-live="polite"
+            ></div>
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                align-items: flex-end;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 3px;
+                  flex: 2;
+                  min-width: 160px;
+                "
+              >
+                <label
+                  for="mtg-title"
+                  style="
+                    font-size: 10px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    color: var(--blue-text);
+                  "
+                  >Meeting title</label
+                >
+                <input
+                  class="coord-input"
+                  type="text"
+                  id="mtg-title"
+                  placeholder="e.g. ADM Bi-weekly"
+                  style="min-width: 0"
+                />
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 3px;
+                  flex: 2;
+                  min-width: 140px;
+                "
+              >
+                <label
+                  for="mtg-time"
+                  style="
+                    font-size: 10px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    color: var(--blue-text);
+                  "
+                  >Date &amp; time</label
+                >
+                <input
+                  class="coord-input"
+                  type="text"
+                  id="mtg-time"
+                  placeholder="e.g. Mon Mar 17, 2:30pm"
+                  style="min-width: 0"
+                />
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 3px;
+                  flex: 2;
+                  min-width: 140px;
+                "
+              >
+                <label
+                  for="mtg-link"
+                  style="
+                    font-size: 10px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    color: var(--blue-text);
+                  "
+                  >Link (optional)</label
+                >
+                <input
+                  class="coord-input"
+                  type="text"
+                  id="mtg-link"
+                  placeholder="e.g. https://teams.microsoft.com/..."
+                  style="min-width: 0"
+                />
+              </div>
+              <button
+                onclick="addMeeting()"
+                style="
+                  font-family: 'BCSans', sans-serif;
+                  font-size: 12px;
+                  font-weight: 700;
+                  padding: 7px 16px;
+                  border-radius: var(--radius-pill);
+                  border: none;
+                  background: var(--primary);
+                  color: white;
+                  cursor: pointer;
+                  white-space: nowrap;
+                  flex-shrink: 0;
+                "
+                aria-label="Add meeting to list"
+              >
+                + Add meeting
+              </button>
+            </div>
+          </div>
+        </section>
 
-      <div class="filter-bar" role="group" aria-label="Filter teams by status">
-        <span class="filter-label">Show:</span>
-        <button class="filter-btn" aria-pressed="true" onclick="setFilter('all',this)" aria-label="Show all teams">All teams</button>
-        <button class="filter-btn active-green" aria-pressed="false" onclick="setFilter('green',this)" aria-label="Show green teams">🟢 Green</button>
-        <button class="filter-btn active-yellow" aria-pressed="false" onclick="setFilter('yellow',this)" aria-label="Show yellow teams">🟡 Yellow</button>
-        <button class="filter-btn active-red" aria-pressed="false" onclick="setFilter('red',this)" aria-label="Show red teams">🔴 Red</button>
-        <button class="filter-btn" aria-pressed="false" onclick="setFilter('empty',this)" aria-label="Show teams with no data">⬜ No data</button>
+        <div
+          class="filter-bar"
+          role="group"
+          aria-label="Filter teams by status"
+        >
+          <span class="filter-label">Show:</span>
+          <button
+            class="filter-btn"
+            aria-pressed="true"
+            onclick="setFilter('all', this)"
+            aria-label="Show all teams"
+          >
+            All teams
+          </button>
+          <button
+            class="filter-btn active-green"
+            aria-pressed="false"
+            onclick="setFilter('green', this)"
+            aria-label="Show green teams"
+          >
+            🟢 Green
+          </button>
+          <button
+            class="filter-btn active-yellow"
+            aria-pressed="false"
+            onclick="setFilter('yellow', this)"
+            aria-label="Show yellow teams"
+          >
+            🟡 Yellow
+          </button>
+          <button
+            class="filter-btn active-red"
+            aria-pressed="false"
+            onclick="setFilter('red', this)"
+            aria-label="Show red teams"
+          >
+            🔴 Red
+          </button>
+          <button
+            class="filter-btn"
+            aria-pressed="false"
+            onclick="setFilter('empty', this)"
+            aria-label="Show teams with no data"
+          >
+            ⬜ No data
+          </button>
+        </div>
+
+        <p class="section-heading" aria-hidden="true">🏢 Team Updates</p>
+        <div
+          class="grid"
+          id="grid"
+          role="list"
+          aria-label="Team status cards"
+          aria-live="polite"
+        ></div>
       </div>
 
-      <p class="section-heading" aria-hidden="true">🏢 Team Updates</p>
-      <div class="grid" id="grid" role="list" aria-label="Team status cards" aria-live="polite"></div>
+      <!-- HISTORY VIEW -->
+      <div
+        class="main history-view"
+        id="history-view"
+        aria-label="Historical sitreps"
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+          "
+        >
+          <h2
+            style="font-size: 18px; font-weight: 700; letter-spacing: -0.02em"
+          >
+            📚 Historical SitReps
+          </h2>
+          <button
+            class="hbtn"
+            onclick="toggleHistory()"
+            style="
+              background: rgba(1, 51, 102, 0.08);
+              color: var(--primary);
+              border-color: var(--border);
+            "
+            aria-label="Close history view"
+          >
+            ✕ Close
+          </button>
+        </div>
+        <div
+          class="week-selector"
+          id="week-selector"
+          role="group"
+          aria-label="Select week to view"
+        ></div>
+        <div class="history-grid" id="history-grid" aria-live="polite"></div>
+      </div>
+    </main>
+
+    <!-- MODAL -->
+    <div
+      class="modal-overlay"
+      id="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      onclick="closeModalOutside(event)"
+    >
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title" id="modal-title">Edit team</h2>
+          <button
+            class="modal-close"
+            onclick="closeModal()"
+            aria-label="Close modal"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="field-group">
+            <label class="field-label" for="f-week">Week of</label>
+            <select
+              id="f-week"
+              aria-label="Select which week this update is for"
+            ></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="f-team"
+              >Team <span class="req" aria-hidden="true">*</span
+              ><span class="sr-only">(required)</span></label
+            >
+            <select id="f-team" aria-required="true">
+              <option value="">Select team...</option>
+              <option>BCSC</option>
+              <option>EFV</option>
+              <option>SDG</option>
+              <option>ADR</option>
+              <option>CHEFS</option>
+              <option>Notify</option>
+              <option>Workflow</option>
+              <option>DDS</option>
+              <option>SDX</option>
+              <option>DevX</option>
+              <option>CSTAR</option>
+              <option>Disability Services</option>
+              <option>SSI</option>
+              <option>SDPR/SDD</option>
+              <option>ACT</option>
+            </select>
+          </div>
+          <fieldset style="border: none; padding: 0; margin-bottom: 16px">
+            <legend class="field-label">
+              Status <span class="req" aria-hidden="true">*</span
+              ><span class="sr-only">(required)</span>
+            </legend>
+            <div class="ryg-pick">
+              <button
+                type="button"
+                class="ryg-opt"
+                id="rg"
+                onclick="pickRYG('green')"
+                aria-pressed="false"
+              >
+                🟢 Green
+              </button>
+              <button
+                type="button"
+                class="ryg-opt"
+                id="ry"
+                onclick="pickRYG('yellow')"
+                aria-pressed="false"
+              >
+                🟡 Yellow
+              </button>
+              <button
+                type="button"
+                class="ryg-opt"
+                id="rr"
+                onclick="pickRYG('red')"
+                aria-pressed="false"
+              >
+                🔴 Red
+              </button>
+            </div>
+          </fieldset>
+          <div class="row2">
+            <div class="field-group">
+              <label class="field-label" for="f-highlight"
+                >Highlight
+                <span style="color: #d32f2f; font-weight: 700">*</span></label
+              >
+              <textarea
+                id="f-highlight"
+                placeholder="Key highlight this week..."
+                required
+              ></textarea>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="f-blocker">Blocker</label>
+              <textarea
+                id="f-blocker"
+                placeholder="Any blockers? Leave blank if none..."
+              ></textarea>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field-group">
+              <label class="field-label" for="f-init">Initiative #</label>
+              <input type="text" id="f-init" placeholder="e.g. INI-04" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="f-esc">Escalator # (Jira)</label>
+              <input type="text" id="f-esc" placeholder="e.g. JIRA-1234" />
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" id="deps-label"
+              >Dependencies in (teams you are waiting on)</label
+            >
+            <div
+              style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px"
+              id="deps-picker"
+              role="group"
+              aria-labelledby="deps-label"
+            ></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="f-summary"
+              >Week summary (optional)</label
+            >
+            <textarea
+              id="f-summary"
+              placeholder="Any extra context for this team..."
+              style="min-height: 56px"
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <span
+            class="modal-save-status"
+            id="modal-save-status"
+            aria-live="polite"
+          ></span>
+          <button class="mbtn cancel" onclick="closeModal()">Cancel</button>
+          <button class="mbtn save" onclick="saveTeam()">Save update</button>
+        </div>
+      </div>
     </div>
 
-    <!-- HISTORY VIEW -->
-    <div class="main history-view" id="history-view" aria-label="Historical sitreps">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <h2 style="font-size:18px;font-weight:700;letter-spacing:-0.02em;">📚 Historical SitReps</h2>
-        <button class="hbtn" onclick="toggleHistory()" style="background:rgba(1,51,102,0.08);color:var(--primary);border-color:var(--border);" aria-label="Close history view">✕ Close</button>
-      </div>
-      <div class="week-selector" id="week-selector" role="group" aria-label="Select week to view"></div>
-      <div class="history-grid" id="history-grid" aria-live="polite"></div>
-    </div>
-  </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <!-- MODAL -->
-  <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" onclick="closeModalOutside(event)">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 class="modal-title" id="modal-title">Edit team</h2>
-        <button class="modal-close" onclick="closeModal()" aria-label="Close modal">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="field-group">
-          <label class="field-label" for="f-week">Week of</label>
-          <select id="f-week" aria-label="Select which week this update is for"></select>
-        </div>
-        <div class="field-group">
-          <label class="field-label" for="f-team">Team <span class="req" aria-hidden="true">*</span><span class="sr-only">(required)</span></label>
-          <select id="f-team" aria-required="true">
-            <option value="">Select team...</option>
-            <option>BCSC</option><option>EFV</option><option>SDG</option><option>ADR</option>
-            <option>CHEFS</option><option>Notify</option><option>Workflow</option><option>DDS</option>
-            <option>SDX</option><option>DevX</option><option>CSTAR</option>
-            <option>Disability Services</option><option>SSI</option><option>SDPR/SDD</option><option>ACT</option>
-          </select>
-        </div>
-        <fieldset style="border:none;padding:0;margin-bottom:16px;">
-          <legend class="field-label">Status <span class="req" aria-hidden="true">*</span><span class="sr-only">(required)</span></legend>
-          <div class="ryg-pick">
-            <button type="button" class="ryg-opt" id="rg" onclick="pickRYG('green')" aria-pressed="false">🟢 Green</button>
-            <button type="button" class="ryg-opt" id="ry" onclick="pickRYG('yellow')" aria-pressed="false">🟡 Yellow</button>
-            <button type="button" class="ryg-opt" id="rr" onclick="pickRYG('red')" aria-pressed="false">🔴 Red</button>
-          </div>
-        </fieldset>
-        <div class="row2">
-          <div class="field-group">
-            <label class="field-label" for="f-highlight">Highlight <span style="color: #d32f2f; font-weight: 700;">*</span></label>
-            <textarea id="f-highlight" placeholder="Key highlight this week..." required></textarea>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="f-blocker">Blocker</label>
-            <textarea id="f-blocker" placeholder="Any blockers? Leave blank if none..."></textarea>
-          </div>
-        </div>
-        <div class="row2">
-          <div class="field-group">
-            <label class="field-label" for="f-init">Initiative #</label>
-            <input type="text" id="f-init" placeholder="e.g. INI-04"/>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="f-esc">Escalator # (Jira)</label>
-            <input type="text" id="f-esc" placeholder="e.g. JIRA-1234"/>
-          </div>
-        </div>
-        <div class="field-group">
-          <label class="field-label" id="deps-label">Dependencies in (teams you are waiting on)</label>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="deps-picker" role="group" aria-labelledby="deps-label"></div>
-        </div>
-        <div class="field-group">
-          <label class="field-label" for="f-summary">Week summary (optional)</label>
-          <textarea id="f-summary" placeholder="Any extra context for this team..." style="min-height:56px"></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <span class="modal-save-status" id="modal-save-status" aria-live="polite"></span>
-        <button class="mbtn cancel" onclick="closeModal()">Cancel</button>
-        <button class="mbtn save" onclick="saveTeam()">Save update</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-  <!-- JS: load order matters — config/state first, then utilities, then features -->
-  <script src="js/config.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/render.js"></script>
-  <script src="js/sharepoint.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js" onload="init()"></script>
-</body>
+    <!-- JS: load order matters — config/state first, then utilities, then features -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/sharepoint.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script
+      src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"
+      onload="init()"
+    ></script>
+  </body>
 </html>

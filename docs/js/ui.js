@@ -169,18 +169,18 @@ function closeModalOutside(e) {
 async function saveTeam() {
   const team = document.getElementById('f-team').value
   const highlight = document.getElementById('f-highlight').value.trim()
-  
+
   // Validate required fields
   const missing = []
   if (!team) missing.push('Team name')
   if (!selectedRYG) missing.push('Status (Red/Yellow/Green)')
   if (!highlight) missing.push('Key Highlight')
-  
+
   if (missing.length > 0) {
     showErrorModal(
       'Required Fields Missing',
-      `Please fill in all required fields before saving:\n\n${missing.map(f => '• ' + f).join('\n')}`,
-      ''
+      `Please fill in all required fields before saving:\n\n${missing.map((f) => '• ' + f).join('\n')}`,
+      '',
     )
     return
   }
@@ -296,6 +296,7 @@ function toggleCoord() {
   if (coordOpen) {
     document.getElementById('coord-status').value = coord.status || ''
     document.getElementById('coord-news').value = coord.news || ''
+    renderTeamsList()
     renderFeaturedChips()
     renderMeetingsList()
     document.getElementById('coord-status').focus()
@@ -449,4 +450,201 @@ function clearAll() {
   localStorage.removeItem('sitrep_v2')
   renderAll()
   showToast('Week cleared')
+}
+
+// ── TEAM MANAGEMENT (COORDINATOR PANEL) ──────────────────────────────────────
+function renderTeamsList() {
+  const listHtml = TEAMS.map(
+    (team) =>
+      `<div style="display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid #ddd;">
+        <span style="flex: 1; font-size: 13px;">${esc(team)}</span>
+        <button type="button" style="padding: 4px 8px; font-size: 11px; background: #f3e5e5; color: #c41c3b; border: none; border-radius: 4px; cursor: pointer;" onclick="removeTeamFromPanel('${esc(team)}')">Remove</button>
+      </div>`,
+  ).join('')
+  document.getElementById('teams-list').innerHTML =
+    listHtml ||
+    '<div style="font-size: 12px; color: var(--text3); padding: 10px 0;">No teams to manage</div>'
+}
+
+function openAddTeamModal() {
+  const newTeamName = prompt('Enter new team name:', '')
+  if (!newTeamName || !newTeamName.trim()) return
+  addTeamToSharePoint(newTeamName.trim())
+}
+
+async function addTeamToSharePoint(teamName) {
+  try {
+    console.log('[TEAM-MGMT] Adding team:', teamName)
+    const token = await getToken()
+    if (!token || !_siteId) throw new Error('Not authenticated')
+
+    // Check if team already exists
+    if (TEAMS.includes(teamName)) {
+      showErrorModal(
+        'Team Already Exists',
+        `The team "${teamName}" already exists in the system.`,
+        '',
+      )
+      return
+    }
+
+    // Add to TEAMS array
+    TEAMS.push(teamName)
+    TEAMS.sort() // Keep alphabetical
+
+    // Force UI rebuild
+    buildDepsPicker()
+    renderTeamsList()
+    renderFeaturedChips()
+    renderGrid()
+
+    // Sync to SharePoint
+    await saveTeamsRegistry(token, TEAMS)
+
+    showErrorModal(
+      '✅ Team Added Successfully',
+      `"${teamName}" has been added and is now available to all users.\n\n⚠️ Important Next Steps:\n\n• Update the MS Form to include "${teamName}" in the team selection question\n• Add "${teamName}" to dependency fields if applicable\n• The change will sync to all connected users automatically`,
+      '',
+    )
+
+    console.log('[TEAM-MGMT] Team added and synced:', teamName)
+  } catch (e) {
+    console.error('[TEAM-MGMT] Error adding team:', e)
+    showErrorModal(
+      'Failed to Add Team',
+      `Could not add "${teamName}": ${e.message}`,
+      '',
+    )
+  }
+}
+
+async function removeTeamFromPanel(teamName) {
+  if (
+    !confirm(
+      `Are you sure you want to remove "${teamName}"?\n\nThis will hide it from future submissions but existing data will remain.`,
+    )
+  )
+    return
+
+  try {
+    console.log('[TEAM-MGMT] Removing team:', teamName)
+    const token = await getToken()
+    if (!token || !_siteId) throw new Error('Not authenticated')
+
+    // Remove from TEAMS array
+    const idx = TEAMS.indexOf(teamName)
+    if (idx >= 0) TEAMS.splice(idx, 1)
+
+    // Force UI rebuild
+    buildDepsPicker()
+    renderTeamsList()
+    renderFeaturedChips()
+    renderGrid()
+
+    // Sync to SharePoint
+    await saveTeamsRegistry(token, TEAMS)
+
+    showErrorModal(
+      '✅ Team Removed',
+      `"${teamName}" has been removed from the active team list.\n\n⚠️ Important: Update the MS Form to remove "${teamName}" from team selection.`,
+      '',
+    )
+
+    console.log('[TEAM-MGMT] Team removed and synced:', teamName)
+  } catch (e) {
+    console.error('[TEAM-MGMT] Error removing team:', e)
+    showErrorModal(
+      'Failed to Remove Team',
+      `Could not remove "${teamName}": ${e.message}`,
+      '',
+    )
+  }
+}
+
+async function saveTeamsRegistry(token, teamsList) {
+  // Create or update a registry item in SharePoint that tracks all teams
+  // This allows other users/sessions to sync the team list
+  if (!_siteId || !_teamListId) return
+
+  const fields = {
+    TeamName: '__TEAMS_REGISTRY__',
+    OverallStatus: 'Yellow', // Placeholder
+    Highlight: JSON.stringify(teamsList), // Store team list as JSON
+    Blocker: new Date().toISOString(), // Track last update
+  }
+
+  try {
+    // Try to find existing registry item
+    const searchResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$filter=fields/TeamName eq '__TEAMS_REGISTRY__'`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    const search = await searchResp.json()
+
+    if (search.value?.length > 0) {
+      // Update existing
+      const itemId = search.value[0].id
+      const updateResp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items/${itemId}/fields`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(fields),
+        },
+      )
+      if (!updateResp.ok) throw new Error(`PATCH failed ${updateResp.status}`)
+    } else {
+      // Create new
+      const createResp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fields }),
+        },
+      )
+      if (!createResp.ok) throw new Error(`POST failed ${createResp.status}`)
+    }
+  } catch (e) {
+    console.warn('[TEAM-MGMT] Could not save teams registry:', e.message)
+    // Non-critical, continue anyway
+  }
+}
+
+async function syncTeamsFromSharePoint(token) {
+  // On load, check if there's an updated team list in SharePoint
+  if (!_siteId || !_teamListId) return
+
+  try {
+    const searchResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$filter=fields/TeamName eq '__TEAMS_REGISTRY__'&$expand=fields`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    const search = await searchResp.json()
+
+    if (search.value?.length > 0) {
+      const registryItem = search.value[0]
+      const highlight = registryItem.fields?.Highlight
+      if (highlight) {
+        try {
+          const syncedTeams = JSON.parse(highlight)
+          if (Array.isArray(syncedTeams)) {
+            TEAMS = syncedTeams
+            console.log('[TEAM-MGMT] Synced teams from SharePoint:', TEAMS)
+            buildDepsPicker()
+          }
+        } catch (e) {
+          console.warn('[TEAM-MGMT] Could not parse synced teams:', e)
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[TEAM-MGMT] Could not sync teams from SharePoint:', e.message)
+  }
 }
