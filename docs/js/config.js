@@ -42,7 +42,6 @@ let coordItemId = null
 let _siteId = null
 let _coordListId = null
 let _teamListId = null
-let _teamRegistryItemId = null
 
 let saveTimer = null
 let autoRefreshTimer = null // debounce timer for coordinator saves
