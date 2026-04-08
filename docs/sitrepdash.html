@@ -237,26 +237,21 @@
                 margin-bottom: 10px;
               "
             >
-              � Manage Teams
+              👥 Manage Teams
             </div>
-            <div style="display: flex; gap: 8px; margin-bottom: 12px">
-              <input
-                type="text"
-                id="team-input"
-                placeholder="New team name..."
-                style="
-                  flex: 1;
-                  padding: 6px 8px;
-                  font-size: 12px;
-                  border: 1px solid #ccc;
-                  border-radius: 4px;
-                "
-              />
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                margin-bottom: 12px;
+                align-items: center;
+              "
+            >
               <button
                 type="button"
                 onclick="openAddTeamModal()"
                 style="
-                  padding: 6px 12px;
+                  padding: 8px 14px;
                   font-size: 12px;
                   background: #003366;
                   color: white;
@@ -268,10 +263,13 @@
               >
                 Add Team
               </button>
+              <span style="font-size: 12px; color: var(--text3)"
+                >Add a new team with an optional acronym.</span
+              >
             </div>
             <div
               id="teams-list"
-              style="max-height: 150px; overflow-y: auto"
+              style="display: flex; flex-wrap: wrap; gap: 8px"
             ></div>
             <div
               style="

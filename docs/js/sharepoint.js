@@ -199,7 +199,7 @@ async function loadFromSharePoint() {
 
     renderAll()
     showToast(`✓ Loaded ${Object.keys(data).length} teams from SharePoint`)
-      await syncTeamsFromSharePoint(token)
+    await syncTeamsFromSharePoint(token)
     await loadCoordFromSharePoint(token)
     showFullPageState('loaded')
   } catch (err) {

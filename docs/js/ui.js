@@ -114,6 +114,7 @@ function setFilter(f, btn) {
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
 function openModal(teamName) {
+  buildTeamSelect()
   const t = data[teamName]
   document.getElementById('modal-title').textContent = t
     ? `Edit — ${teamName}`
@@ -456,20 +457,90 @@ function clearAll() {
 function renderTeamsList() {
   const listHtml = TEAMS.map(
     (team) =>
-      `<div style="display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid #ddd;">
-        <span style="flex: 1; font-size: 13px;">${esc(team)}</span>
-        <button type="button" style="padding: 4px 8px; font-size: 11px; background: #f3e5e5; color: #c41c3b; border: none; border-radius: 4px; cursor: pointer;" onclick="removeTeamFromPanel('${esc(team)}')">Remove</button>
+      `<div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #eef4ff; border-radius: 999px; font-size: 13px; white-space: nowrap;">
+        <span>${esc(team)}</span>
+        <button type="button" class="team-btn rename" onclick="openRenameTeamModal('${esc(team)}')">Rename</button>
+        <button type="button" class="team-btn remove" onclick="removeTeamFromPanel('${esc(team)}')">Remove</button>
       </div>`,
   ).join('')
   document.getElementById('teams-list').innerHTML =
     listHtml ||
-    '<div style="font-size: 12px; color: var(--text3); padding: 10px 0;">No teams to manage</div>'
+    '<div style="font-size: 12px; color: var(--text3);">No teams to manage</div>'
+}
+
+function buildTeamSelect() {
+  const select = document.getElementById('f-team')
+  if (!select) return
+  select.innerHTML =
+    '<option value="">Select team...</option>' +
+    TEAMS.map(
+      (team) => `<option value="${esc(team)}">${esc(team)}</option>`,
+    ).join('')
+}
+
+function parseTeamLabel(label) {
+  const parts = label.split(' — ')
+  if (parts.length === 2) {
+    return { acronym: parts[0], teamName: parts[1] }
+  }
+  return { acronym: '', teamName: label }
+}
+
+function makeTeamLabel(teamName, acronym) {
+  const name = teamName.trim()
+  if (!name) return ''
+  const acro = (acronym || '').trim()
+  return acro ? `${acro} — ${name}` : name
+}
+
+function closeTeamDialog() {
+  const overlay = document.getElementById('team-dialog-overlay')
+  if (overlay) overlay.remove()
+}
+
+function showTeamDialog({ title, teamName = '', acronym = '', onSave }) {
+  closeTeamDialog()
+  const overlay = document.createElement('div')
+  overlay.id = 'team-dialog-overlay'
+  overlay.style.cssText =
+    'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;'
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:14px;max-width:420px;width:100%;padding:24px;box-shadow:0 18px 40px rgba(0,0,0,0.18);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <h3 style="margin:0;font-size:18px;color:#0f172a;">${esc(title)}</h3>
+        <button type="button" onclick="closeTeamDialog()" style="border:none;background:none;color:#334155;font-size:20px;cursor:pointer;">✕</button>
+      </div>
+      <div style="display:grid;gap:14px;">
+        <label style="font-size:13px;color:#334155;">Team Name<span style="color:#dc2626;">*</span><input id="team-dialog-name" value="${esc(teamName)}" style="width:100%;margin-top:6px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;" /></label>
+        <label style="font-size:13px;color:#334155;">Acronym (optional)<input id="team-dialog-acronym" value="${esc(acronym)}" style="width:100%;margin-top:6px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;" /></label>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;">
+        <button type="button" onclick="closeTeamDialog()" style="padding:10px 14px;font-size:13px;background:#f8fafc;color:#334155;border:1px solid #cbd5e1;border-radius:10px;cursor:pointer;">Cancel</button>
+        <button type="button" id="team-dialog-save" style="padding:10px 14px;font-size:13px;background:#003366;color:white;border:none;border-radius:10px;cursor:pointer;">Save</button>
+      </div>
+    </div>`
+  document.body.appendChild(overlay)
+  document.getElementById('team-dialog-save').onclick = () => {
+    const name = document.getElementById('team-dialog-name').value.trim()
+    const acro = document.getElementById('team-dialog-acronym').value.trim()
+    if (!name) {
+      showToast('Please enter a team name')
+      return
+    }
+    onSave(name, acro)
+    closeTeamDialog()
+  }
+  setTimeout(() => document.getElementById('team-dialog-name').focus(), 50)
 }
 
 function openAddTeamModal() {
-  const newTeamName = prompt('Enter new team name:', '')
-  if (!newTeamName || !newTeamName.trim()) return
-  addTeamToSharePoint(newTeamName.trim())
+  showTeamDialog({
+    title: 'Add New Team',
+    teamName: '',
+    acronym: '',
+    onSave: (teamName, acronym) =>
+      addTeamToSharePoint(makeTeamLabel(teamName, acronym)),
+  })
 }
 
 async function addTeamToSharePoint(teamName) {
@@ -491,8 +562,7 @@ async function addTeamToSharePoint(teamName) {
     // Add to TEAMS array
     TEAMS.push(teamName)
     TEAMS.sort() // Keep alphabetical
-
-    // Force UI rebuild
+    buildTeamSelect()
     buildDepsPicker()
     renderTeamsList()
     renderFeaturedChips()
@@ -501,11 +571,7 @@ async function addTeamToSharePoint(teamName) {
     // Sync to SharePoint
     await saveTeamsRegistry(token, TEAMS)
 
-    showErrorModal(
-      '✅ Team Added Successfully',
-      `"${teamName}" has been added and is now available to all users.\n\n⚠️ Important Next Steps:\n\n• Update the MS Form to include "${teamName}" in the team selection question\n• Add "${teamName}" to dependency fields if applicable\n• The change will sync to all connected users automatically`,
-      '',
-    )
+    showToast(`✓ "${teamName}" added and synced.`)
 
     console.log('[TEAM-MGMT] Team added and synced:', teamName)
   } catch (e) {
@@ -535,7 +601,13 @@ async function removeTeamFromPanel(teamName) {
     const idx = TEAMS.indexOf(teamName)
     if (idx >= 0) TEAMS.splice(idx, 1)
 
+    // If team already had saved data, keep it but preserve the object for history
+    if (data[teamName]) {
+      delete data[teamName]
+    }
+
     // Force UI rebuild
+    buildTeamSelect()
     buildDepsPicker()
     renderTeamsList()
     renderFeaturedChips()
@@ -544,11 +616,7 @@ async function removeTeamFromPanel(teamName) {
     // Sync to SharePoint
     await saveTeamsRegistry(token, TEAMS)
 
-    showErrorModal(
-      '✅ Team Removed',
-      `"${teamName}" has been removed from the active team list.\n\n⚠️ Important: Update the MS Form to remove "${teamName}" from team selection.`,
-      '',
-    )
+    showToast(`✓ "${teamName}" removed and synced.`)
 
     console.log('[TEAM-MGMT] Team removed and synced:', teamName)
   } catch (e) {
@@ -561,12 +629,80 @@ async function removeTeamFromPanel(teamName) {
   }
 }
 
+function openRenameTeamModal(existingTeam) {
+  const { acronym, teamName } = parseTeamLabel(existingTeam)
+  showTeamDialog({
+    title: `Rename ${existingTeam}`,
+    teamName,
+    acronym,
+    onSave: (newName, newAcronym) =>
+      renameTeam(existingTeam, makeTeamLabel(newName, newAcronym)),
+  })
+}
+
+async function renameTeam(oldName, newName) {
+  if (!newName) {
+    showToast('Please enter a valid team name')
+    return
+  }
+  if (TEAMS.includes(newName) && oldName !== newName) {
+    showErrorModal(
+      'Team Already Exists',
+      `The team "${newName}" already exists in the system.`,
+      '',
+    )
+    return
+  }
+
+  const idx = TEAMS.indexOf(oldName)
+  if (idx < 0) return
+  TEAMS[idx] = newName
+  TEAMS.sort()
+
+  if (data[oldName]) {
+    data[newName] = { ...data[oldName], team: newName }
+    delete data[oldName]
+  }
+
+  if (coord.featuredHighlights) {
+    coord.featuredHighlights = coord.featuredHighlights.map((t) =>
+      t === oldName ? newName : t,
+    )
+  }
+  if (coord.featuredBlockers) {
+    coord.featuredBlockers = coord.featuredBlockers.map((t) =>
+      t === oldName ? newName : t,
+    )
+  }
+
+  buildTeamSelect()
+  buildDepsPicker()
+  renderTeamsList()
+  renderFeaturedChips()
+  renderGrid()
+
+  try {
+    const token = await getToken()
+    if (!token || !_siteId) throw new Error('Not authenticated')
+    await saveTeamsRegistry(token, TEAMS)
+    showToast(`✓ "${oldName}" renamed to "${newName}" and synced.`)
+  } catch (e) {
+    console.error('[TEAM-MGMT] Error renaming team:', e)
+    showErrorModal(
+      'Failed to Rename Team',
+      `Could not rename "${oldName}" to "${newName}": ${e.message}`,
+      '',
+    )
+  }
+}
+
 async function saveTeamsRegistry(token, teamsList) {
   // Create or update a registry item in SharePoint that tracks all teams
   // This allows other users/sessions to sync the team list
   if (!_siteId || !_teamListId) return
 
   const fields = {
+    Title: '__TEAMS_REGISTRY__',
     TeamName: '__TEAMS_REGISTRY__',
     OverallStatus: 'Yellow', // Placeholder
     Highlight: JSON.stringify(teamsList), // Store team list as JSON
@@ -576,14 +712,21 @@ async function saveTeamsRegistry(token, teamsList) {
   try {
     // Try to find existing registry item
     const searchResp = await fetch(
-      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$filter=fields/TeamName eq '__TEAMS_REGISTRY__'`,
+      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$expand=fields&$top=500`,
       { headers: { Authorization: `Bearer ${token}` } },
     )
+    if (!searchResp.ok)
+      throw new Error(`Registry search failed ${searchResp.status}`)
     const search = await searchResp.json()
+    const registryItems = (search.value || []).filter(
+      (item) =>
+        item.fields?.Title === '__TEAMS_REGISTRY__' ||
+        item.fields?.TeamName === '__TEAMS_REGISTRY__',
+    )
 
-    if (search.value?.length > 0) {
+    if (registryItems.length > 0) {
       // Update existing
-      const itemId = search.value[0].id
+      const itemId = registryItems[0].id
       const updateResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items/${itemId}/fields`,
         {
@@ -623,21 +766,32 @@ async function syncTeamsFromSharePoint(token) {
 
   try {
     const searchResp = await fetch(
-      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$filter=fields/TeamName eq '__TEAMS_REGISTRY__'&$expand=fields`,
+      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$expand=fields&$top=500`,
       { headers: { Authorization: `Bearer ${token}` } },
     )
+    if (!searchResp.ok)
+      throw new Error(`Registry fetch failed ${searchResp.status}`)
     const search = await searchResp.json()
+    const registryItems = (search.value || []).filter(
+      (item) =>
+        item.fields?.Title === '__TEAMS_REGISTRY__' ||
+        item.fields?.TeamName === '__TEAMS_REGISTRY__',
+    )
 
-    if (search.value?.length > 0) {
-      const registryItem = search.value[0]
+    if (registryItems.length > 0) {
+      const registryItem = registryItems[0]
       const highlight = registryItem.fields?.Highlight
       if (highlight) {
         try {
           const syncedTeams = JSON.parse(highlight)
           if (Array.isArray(syncedTeams)) {
             TEAMS = syncedTeams
+            TEAMS.sort()
             console.log('[TEAM-MGMT] Synced teams from SharePoint:', TEAMS)
+            buildTeamSelect()
             buildDepsPicker()
+            renderTeamsList()
+            renderGrid()
           }
         } catch (e) {
           console.warn('[TEAM-MGMT] Could not parse synced teams:', e)
