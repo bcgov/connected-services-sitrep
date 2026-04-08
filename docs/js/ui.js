@@ -819,14 +819,20 @@ async function saveTeamsRegistry(token, teamsList) {
 
 async function getListColumnDefinition(token, columnName) {
   const resp = await fetch(
-    `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/columns?$filter=name eq '${columnName}'`,
+    `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/columns`,
     { headers: { Authorization: `Bearer ${token}` } },
   )
   if (!resp.ok) {
-    throw new Error(`Could not load column ${columnName}: ${resp.status}`)
+    throw new Error(`Could not load columns: ${resp.status}`)
   }
   const json = await resp.json()
-  const column = json.value?.[0]
+  const column = (json.value || []).find(
+    (col) =>
+      col.name === columnName ||
+      col.displayName === columnName ||
+      col.name === columnName.replace(/\s+/g, '') ||
+      col.displayName === columnName.replace(/\s+/g, ''),
+  )
   if (!column) {
     throw new Error(`List column ${columnName} not found`)
   }
@@ -845,12 +851,15 @@ async function patchListColumnChoices(token, columnName, choices) {
       },
       body: JSON.stringify({
         choices,
-        fillInChoice: true,
+        allowTextEntry: true,
       }),
     },
   )
   if (!resp.ok) {
-    throw new Error(`Could not update ${columnName} choices: ${resp.status}`)
+    const text = await resp.text().catch(() => '')
+    throw new Error(
+      `Could not update ${columnName} choices: ${resp.status} ${resp.statusText} ${text}`,
+    )
   }
   return await resp.json()
 }
