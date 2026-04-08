@@ -50,7 +50,7 @@ async function checkForUpdates() {
     // Quick check: get latest items count and modified date
     const itemsResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$top=1&$orderby=lastModifiedDateTime desc&$select=lastModifiedDateTime,id`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` } },
     )
 
     if (!itemsResp.ok) return // Skip if we can't check
@@ -63,7 +63,7 @@ async function checkForUpdates() {
     if (_coordListId) {
       const coordResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items?$top=1&$orderby=lastModifiedDateTime desc&$select=lastModifiedDateTime,id`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       )
       if (coordResp.ok) {
         const coordItems = await coordResp.json()

@@ -10,18 +10,28 @@ function esc(str) {
 
 function safeJSON(str, fallback) {
   if (!str) return fallback
-  try { return JSON.parse(str) } catch { return fallback }
+  try {
+    return JSON.parse(str)
+  } catch {
+    return fallback
+  }
 }
 
 function getWeekLabel() {
-  const d = new Date(), day = d.getDay()
+  const d = new Date(),
+    day = d.getDay()
   const diff = d.getDate() - day + (day === 0 ? -6 : 1)
   d.setDate(diff)
-  return d.toLocaleDateString('en-CA', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return d.toLocaleDateString('en-CA', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
 }
 
 function getWeekStart() {
-  const d = new Date(), day = d.getDay()
+  const d = new Date(),
+    day = d.getDay()
   const diff = d.getDate() - day + (day === 0 ? -6 : 1)
   d.setDate(diff)
   d.setHours(0, 0, 0, 0)
@@ -34,17 +44,26 @@ function parseDepsIn(raw) {
     const p = JSON.parse(raw.replace(/""/g, '"'))
     return Array.isArray(p) ? p : [p]
   } catch {
-    return raw.replace(/[\[\]"]/g, '').split(/[;,]/).map(s => s.trim()).filter(Boolean)
+    return raw
+      .replace(/[\[\]"]/g, '')
+      .split(/[;,]/)
+      .map((s) => s.trim())
+      .filter(Boolean)
   }
 }
 
 function getWeekOptions() {
   // Returns [lastWeek, thisWeek, nextWeek] as en-CA date strings
-  return [-1, 0, 1].map(offset => {
-    const d = new Date(), day = d.getDay()
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1) + (offset * 7)
+  return [-1, 0, 1].map((offset) => {
+    const d = new Date(),
+      day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1) + offset * 7
     d.setDate(diff)
-    return d.toLocaleDateString('en-CA', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return d.toLocaleDateString('en-CA', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
   })
 }
 

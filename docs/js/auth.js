@@ -3,7 +3,8 @@
 const msalConfig = {
   auth: {
     clientId: CONFIG.clientId,
-    authority: 'https://login.microsoftonline.com/6fdb5200-3d0d-4a8a-b036-d3685e359adc',
+    authority:
+      'https://login.microsoftonline.com/6fdb5200-3d0d-4a8a-b036-d3685e359adc',
     redirectUri: window.location.origin,
   },
   cache: { cacheLocation: 'sessionStorage' },
@@ -34,7 +35,10 @@ async function getToken() {
   const accounts = msalInstance.getAllAccounts()
   if (accounts.length > 0) {
     try {
-      const r = await msalInstance.acquireTokenSilent({ scopes, account: accounts[0] })
+      const r = await msalInstance.acquireTokenSilent({
+        scopes,
+        account: accounts[0],
+      })
       console.log('[AUTH] Token acquired silently for:', accounts[0].username)
       return r.accessToken
     } catch (e) {
@@ -47,7 +51,9 @@ async function getToken() {
     console.log('[AUTH] Token acquired via popup for:', r.account.username)
     return r.accessToken
   } catch (e) {
-    throw new Error('Sign in failed — please allow popups for this site and try again')
+    throw new Error(
+      'Sign in failed — please allow popups for this site and try again',
+    )
   }
 }
 
@@ -55,15 +61,18 @@ async function getToken() {
 function debugAuth() {
   const accounts = msalInstance?.getAllAccounts() || []
   console.log('[AUTH DEBUG]', {
-    accounts: accounts.map(a => ({ username: a.username, localAccountId: a.localAccountId })),
+    accounts: accounts.map((a) => ({
+      username: a.username,
+      localAccountId: a.localAccountId,
+    })),
     hasMsal: !!window.msal,
     msalInstance: !!msalInstance,
-    scopes: ['Sites.Read.All', 'Sites.ReadWrite.All']
+    scopes: ['Sites.Read.All', 'Sites.ReadWrite.All'],
   })
   return {
     signedIn: accounts.length > 0,
     account: accounts[0]?.username,
-    scopes: ['Sites.Read.All', 'Sites.ReadWrite.All']
+    scopes: ['Sites.Read.All', 'Sites.ReadWrite.All'],
   }
 }
 
@@ -71,7 +80,10 @@ function debugAuth() {
 async function signIn() {
   try {
     const initResult = await initMsal()
-    if (!initResult) { showToast('MSAL not loaded'); return }
+    if (!initResult) {
+      showToast('MSAL not loaded')
+      return
+    }
     const scopes = [
       'https://graph.microsoft.com/Sites.Read.All',
       'https://graph.microsoft.com/Sites.ReadWrite.All',
