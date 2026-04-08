@@ -186,7 +186,7 @@ async function saveTeam() {
   }
   data[team] = teamData
   console.log('[SAVE] Attempting to save:', team, teamData)
-  
+
   if (!CONFIG.useSharePoint) {
     console.log('[SAVE] Using localStorage (SharePoint disabled)')
     localStorage.setItem('sitrep_v2', JSON.stringify(data))

@@ -210,19 +210,26 @@ async function loadFromSharePoint() {
 async function saveTeamToSharePoint(team, teamData) {
   const statusEl = document.getElementById('modal-save-status')
   if (statusEl) statusEl.textContent = 'Saving...'
-  
+
   console.log('[SP-SAVE] Starting save for team:', team)
   console.log('[SP-SAVE] CONFIG.useSharePoint:', CONFIG.useSharePoint)
   console.log('[SP-SAVE] _siteId:', _siteId ? 'present' : 'MISSING')
   console.log('[SP-SAVE] _teamListId:', _teamListId ? 'present' : 'MISSING')
-  
+
   if (!CONFIG.useSharePoint) {
     console.warn('[SP-SAVE] SharePoint disabled, using localStorage')
     throw new Error('SharePoint disabled in CONFIG')
   }
   if (!_siteId || !_teamListId) {
-    console.error('[SP-SAVE] SharePoint IDs not initialized. _siteId:', _siteId, '_teamListId:', _teamListId)
-    throw new Error('SharePoint not initialized - _siteId or _teamListId missing. Try refreshing the page.')
+    console.error(
+      '[SP-SAVE] SharePoint IDs not initialized. _siteId:',
+      _siteId,
+      '_teamListId:',
+      _teamListId,
+    )
+    throw new Error(
+      'SharePoint not initialized - _siteId or _teamListId missing. Try refreshing the page.',
+    )
   }
   try {
     const token = await getToken()
