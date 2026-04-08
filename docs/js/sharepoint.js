@@ -37,8 +37,121 @@ function setGridLoading() {
   showFullPageState('loading')
 }
 
+// Load local data and attempt to sync unsaved changes
+async function loadLocalDataAndSync() {
+  // Load any locally saved team data
+  TEAMS.forEach(team => {
+    const localData = localStorage.getItem('sitrep_team_' + team)
+    if (localData) {
+      try {
+        const parsed = JSON.parse(localData)
+        if (parsed._localOnly) {
+          data[team] = parsed
+          console.log(`[LOCAL] Loaded unsaved data for ${team}`)
+        }
+      } catch (e) {
+        console.warn(`Failed to parse local data for ${team}:`, e)
+      }
+    }
+  })
+
+  // Load coordinator data
+  const coordData = localStorage.getItem('sitrep_coord')
+  if (coordData) {
+    try {
+      coord = JSON.parse(coordData)
+      console.log('[LOCAL] Loaded coordinator data')
+    } catch (e) {
+      console.warn('Failed to parse local coordinator data:', e)
+    }
+  }
+
+  // Try to sync local data if we have SharePoint access
+  if (CONFIG.useSharePoint && _siteId && _teamListId) {
+    await syncLocalData()
+  }
+}
+
+// Attempt to sync locally saved data to SharePoint
+async function syncLocalData() {
+  const teamsToSync = Object.keys(data).filter(team => data[team]._localOnly)
+
+  for (const team of teamsToSync) {
+    try {
+      console.log(`[SYNC] Attempting to sync ${team}...`)
+      await saveTeamToSharePoint(team, data[team])
+      // If successful, remove local flag and localStorage
+      delete data[team]._localOnly
+      localStorage.removeItem('sitrep_team_' + team)
+      console.log(`[SYNC] Successfully synced ${team}`)
+    } catch (e) {
+      console.warn(`[SYNC] Failed to sync ${team}, keeping local:`, e.message)
+    }
+  }
+}
+
 // ── LOAD TEAM DATA ────────────────────────────────────────────────────────────
 async function loadFromSharePoint() {
+  setGridLoading()
+  try {
+    const initResult = await initMsal()
+    if (!initResult) {
+      loadLocalDataAndSync()
+      renderAll()
+      return
+    }
+
+    // Not signed in → show sign in screen
+    const accounts = msalInstance.getAllAccounts()
+    if (accounts.length === 0) {
+      showFullPageState('signin')
+      return
+    }
+
+    let token = typeof initResult === 'string' ? initResult : await getToken()
+    if (!token) return
+
+    // Resolve site
+    const siteResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/bcgov.sharepoint.com:/teams/12320-ConnectedServicesStrategicPriority`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    if (!siteResp.ok) throw new Error('Cannot access SharePoint site')
+    const site = await siteResp.json()
+    _siteId = site.id
+
+    // Resolve team data list
+    const listsResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists?$filter=displayName eq '${CONFIG.listName}'`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    const lists = await listsResp.json()
+    if (!lists.value?.length)
+      throw new Error(`List "${CONFIG.listName}" not found`)
+    _teamListId = lists.value[0].id
+
+    // Fetch all items
+    const itemsResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$expand=fields&$top=500`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    const items = await itemsResp.json()
+    allHistoryItems = items.value || []
+
+    // Latest item per team for THIS week only.
+    // Belongs to this week if:
+    //   (a) WeekOf field matches this week label (dashboard edits / week-picker), OR
+    //   (b) no WeekOf and created on or after this Monday 00:00 local time (form submissions)
+    const currentWeek = getWeekLabel()
+    const weekStart = getWeekStart()
+    const byTeam = {}
+
+    // Parse WeekOf to a Date for comparison (handles both YYYY-MM-DD and DD-MM-YYYY formats)
+    function parseWeekOf(weekOfStr) {
+      if (!weekOfStr) return null
+      const parts = weekOfStr.split('-')
+      if (parts.length !== 3) return null
+      // Try YYYY-MM-DD first
   setGridLoading()
   try {
     const initResult = await initMsal()
@@ -217,17 +330,50 @@ async function saveTeamToSharePoint(team, teamData) {
   } catch (e) {
     console.error('ERROR: Could not save team to SharePoint:', e.message, e)
     const userMsg = e.message.includes('429')
-      ? 'Save failed: Too many requests (server busy). Try again in a moment.'
+      ? 'Too many requests (server busy). Try again in a moment.'
       : e.message.includes('401')
-        ? 'Save failed: Authentication expired. Please refresh the page.'
+        ? 'Authentication expired. Please refresh the page.'
         : e.message.includes('403')
-          ? 'Save failed: Permission denied. Check your access.'
+          ? 'Permission denied. Check your access or contact support.'
           : `Save failed: ${e.message}`
-    if (statusEl) statusEl.textContent = `⚠ ${userMsg}`
-    showToast(`⚠ Team save failed: ${userMsg}`)
+
+    // Fallback to localStorage
+    const teamData = {
+      team,
+      status: teamData.status,
+      highlight: teamData.highlight,
+      blocker: teamData.blocker,
+      initiativeNum: teamData.initiativeNum,
+      escalatorNum: teamData.escalatorNum,
+      depsIn: teamData.depsIn || [],
+      summary: teamData.summary,
+      _weekOf: teamData._weekOf || getWeekLabel(),
+      _localOnly: true, // Flag to indicate this is local-only
+      _savedAt: new Date().toISOString()
+    }
+    data[team] = teamData
+    localStorage.setItem('sitrep_team_' + team, JSON.stringify(teamData))
+    renderGrid() // Update UI immediately
+
+    const authInfo = debugAuth()
+    const details = `Error: ${e.message}
+Token: ${token ? 'Present' : 'Missing'}
+User: ${authInfo.account || 'Unknown'}
+Signed In: ${authInfo.signedIn}
+Scopes: ${authInfo.scopes.join(', ')}
+Team: ${team}
+Time: ${new Date().toISOString()}
+
+Troubleshooting:
+• If you can see the dashboard but can't save, you may have read-only permissions
+• Try refreshing the page to re-authenticate
+• Contact support with this error details`
+    showErrorModal('Team Save Failed', `${userMsg} Data saved locally and will sync when connection is restored.`, details)
+
+    if (statusEl) statusEl.textContent = '⚠ Saved locally'
     setTimeout(() => {
       if (statusEl) statusEl.textContent = ''
-    }, 5000)
+    }, 3000)
   }
 }
 
@@ -351,13 +497,26 @@ async function saveCoordToSharePoint() {
       : e.message.includes('401')
         ? 'Authentication expired. Saved locally. Please refresh.'
         : e.message.includes('403')
-          ? 'Permission denied. Saved locally. Check your access.'
+          ? 'Permission denied. Saved locally. Check your access or contact support.'
           : `Could not reach SharePoint. Saved locally.`
-    if (savingEl) savingEl.textContent = `⚠ ${userMsg}`
-    showToast(`⚠ ${userMsg}`)
+
+    const authInfo = debugAuth()
+    const details = `Error: ${e.message}
+User: ${authInfo.account || 'Unknown'}
+Signed In: ${authInfo.signedIn}
+Scopes: ${authInfo.scopes.join(', ')}
+Time: ${new Date().toISOString()}
+
+Troubleshooting:
+• If you can see the dashboard but can't save, you may have read-only permissions
+• Try refreshing the page to re-authenticate
+• Contact support with this error details`
+    showErrorModal('Coordinator Save Failed', userMsg, details)
+
+    if (savingEl) savingEl.textContent = `⚠ Saved locally`
     setTimeout(() => {
       if (savingEl) savingEl.textContent = ''
-    }, 5000)
+    }, 3000)
   }
 }
 

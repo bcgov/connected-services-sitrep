@@ -35,14 +35,35 @@ async function getToken() {
   if (accounts.length > 0) {
     try {
       const r = await msalInstance.acquireTokenSilent({ scopes, account: accounts[0] })
+      console.log('[AUTH] Token acquired silently for:', accounts[0].username)
       return r.accessToken
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[AUTH] Silent token acquisition failed:', e.message)
+    }
   }
   try {
+    console.log('[AUTH] Acquiring token via popup...')
     const r = await msalInstance.loginPopup({ scopes })
+    console.log('[AUTH] Token acquired via popup for:', r.account.username)
     return r.accessToken
   } catch (e) {
     throw new Error('Sign in failed — please allow popups for this site and try again')
+  }
+}
+
+// Debug function to check current authentication state
+function debugAuth() {
+  const accounts = msalInstance?.getAllAccounts() || []
+  console.log('[AUTH DEBUG]', {
+    accounts: accounts.map(a => ({ username: a.username, localAccountId: a.localAccountId })),
+    hasMsal: !!window.msal,
+    msalInstance: !!msalInstance,
+    scopes: ['Sites.Read.All', 'Sites.ReadWrite.All']
+  })
+  return {
+    signedIn: accounts.length > 0,
+    account: accounts[0]?.username,
+    scopes: ['Sites.Read.All', 'Sites.ReadWrite.All']
   }
 }
 

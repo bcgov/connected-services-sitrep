@@ -16,24 +16,74 @@ function init() {
         }
       }, 100)
     }
-    // Start auto-refresh: reload every 30 seconds to see updates from others
+    // Start smart auto-refresh: check for changes every minute
     startAutoRefresh()
   } else {
-    data = JSON.parse(localStorage.getItem('sitrep_v2') || '{}')
-    coord = JSON.parse(localStorage.getItem('sitrep_coord') || '{}')
+    loadLocalDataAndSync()
     renderAll()
   }
 }
 
 // ── AUTO-REFRESH ──────────────────────────────────────────────────────────────
+let lastDataHash = null
+let lastCoordHash = null
+
 function startAutoRefresh() {
   if (autoRefreshTimer) clearInterval(autoRefreshTimer)
-  autoRefreshTimer = setInterval(() => {
+  autoRefreshTimer = setInterval(async () => {
     if (CONFIG.useSharePoint && document.visibilityState === 'visible') {
-      loadFromSharePoint().catch((e) => console.warn('Auto-refresh failed:', e))
+      try {
+        await checkForUpdates()
+      } catch (e) {
+        console.warn('Auto-refresh check failed:', e)
+      }
     }
-  }, 30000) // Refresh every 30 seconds
-  console.log('[AUTO-REFRESH] Started (30s interval)')
+  }, 60000) // Check every minute instead of 30 seconds
+  console.log('[AUTO-REFRESH] Started (60s interval, change detection)')
+}
+
+async function checkForUpdates() {
+  try {
+    const token = await getToken()
+    if (!token || !_siteId || !_teamListId) return
+
+    // Quick check: get latest items count and modified date
+    const itemsResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$top=1&$orderby=lastModifiedDateTime desc&$select=lastModifiedDateTime,id`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+
+    if (!itemsResp.ok) return // Skip if we can't check
+
+    const items = await itemsResp.json()
+    const latestModified = items.value?.[0]?.lastModifiedDateTime
+
+    // Check coordinator list too
+    let coordModified = null
+    if (_coordListId) {
+      const coordResp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items?$top=1&$orderby=lastModifiedDateTime desc&$select=lastModifiedDateTime,id`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (coordResp.ok) {
+        const coordItems = await coordResp.json()
+        coordModified = coordItems.value?.[0]?.lastModifiedDateTime
+      }
+    }
+
+    // If we have new data, do a full refresh
+    const currentHash = `${latestModified || ''}|${coordModified || ''}`
+    const previousHash = `${lastDataHash || ''}|${lastCoordHash || ''}`
+
+    if (currentHash !== previousHash) {
+      console.log('[AUTO-REFRESH] Changes detected, refreshing...')
+      lastDataHash = latestModified
+      lastCoordHash = coordModified
+      await loadFromSharePoint()
+    }
+  } catch (e) {
+    // Silent fail for auto-refresh checks
+  }
 }
 
 function stopAutoRefresh() {
