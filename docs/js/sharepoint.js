@@ -1,6 +1,26 @@
-// ── SHAREPOINT ───────────────────────────────────────────────────────────────
+// ── SHAREPOINT.JS ────────────────────────────────────────────────────────────
+// All Microsoft Graph API calls: loading and saving team data, loading and
+// saving coordinator data, local-storage fallback, and page-state management.
+//
+// Dependencies: config.js (state), utils.js (helpers), auth.js (getToken)
+//
+// Key data flows:
+//   Load  → loadFromSharePoint() → data{}, allHistoryItems[], allTeamNames[]
+//   Save  → saveTeamToSharePoint(team, teamData)   (PATCH or POST)
+//   Coord → loadCoordFromSharePoint(token)          (reads coord{})
+//           saveCoordToSharePoint()                 (debounced via debounceSave)
+//
+// Local-storage fallback:
+//   If a save fails the data is written to localStorage with _localOnly: true.
+//   On the next successful load, syncLocalData() attempts to push those
+//   changes back to SharePoint and clears the local copies.
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Show/hide dashboard chrome depending on auth state
+// ── PAGE STATE ────────────────────────────────────────────────────────────────
+// Controls which "screen" is visible:
+//   'loading' — spinner only, all chrome hidden
+//   'signin'  — full-page sign-in card, all chrome hidden
+//   'loaded'  — full dashboard visible
 function showFullPageState(state) {
   const summary = document.querySelector('.summary')
   const coordBar = document.getElementById('coord-bar')
@@ -33,13 +53,17 @@ function showFullPageState(state) {
   }
 }
 
+// Convenience alias used before the full load completes.
 function setGridLoading() {
   showFullPageState('loading')
 }
 
-// Load local data and attempt to sync unsaved changes
+// ── LOCAL STORAGE FALLBACK ────────────────────────────────────────────────────
+// On load, merge any localStorage-only team entries into `data` so the UI
+// reflects unsaved changes even before SharePoint responds.
+// If SP IDs are already resolved, immediately try to sync those entries back.
 async function loadLocalDataAndSync() {
-  // Load any locally saved team data from localStorage keys
+  // Restore locally-saved team entries
   Object.keys(localStorage)
     .filter((key) => key.startsWith('sitrep_team_'))
     .forEach((key) => {
@@ -53,28 +77,30 @@ async function loadLocalDataAndSync() {
           console.log(`[LOCAL] Loaded unsaved data for ${team}`)
         }
       } catch (e) {
-        console.warn(`Failed to parse local data for ${team}:`, e)
+        console.warn(`[LOCAL] Failed to parse local data for ${team}:`, e)
       }
     })
 
-  // Load coordinator data
+  // Restore locally-saved coordinator data
   const coordData = localStorage.getItem('sitrep_coord')
   if (coordData) {
     try {
       coord = JSON.parse(coordData)
-      console.log('[LOCAL] Loaded coordinator data')
+      console.log('[LOCAL] Loaded coordinator data from localStorage')
     } catch (e) {
-      console.warn('Failed to parse local coordinator data:', e)
+      console.warn('[LOCAL] Failed to parse local coordinator data:', e)
     }
   }
 
-  // Try to sync local data if we have SharePoint access
+  // If SP is reachable, attempt to push any local-only entries back
   if (CONFIG.useSharePoint && _siteId && _teamListId) {
     await syncLocalData()
   }
 }
 
-// Attempt to sync locally saved data to SharePoint
+// Push any team entries flagged _localOnly back to SharePoint.
+// On success, removes the local flag and the localStorage key.
+// On failure, leaves the local entry intact for the next retry.
 async function syncLocalData() {
   const teamsToSync = Object.keys(data).filter((team) => data[team]._localOnly)
 
@@ -82,7 +108,6 @@ async function syncLocalData() {
     try {
       console.log(`[SYNC] Attempting to sync ${team}...`)
       await saveTeamToSharePoint(team, data[team])
-      // If successful, remove local flag and localStorage
       delete data[team]._localOnly
       localStorage.removeItem('sitrep_team_' + team)
       console.log(`[SYNC] Successfully synced ${team}`)
@@ -93,17 +118,27 @@ async function syncLocalData() {
 }
 
 // ── LOAD TEAM DATA ────────────────────────────────────────────────────────────
+// Main entry point. Authenticates, resolves SP list IDs, fetches all items,
+// builds the team roster from column choices + history, filters to this week,
+// and renders the dashboard.
+//
+// Week-matching logic (an item belongs to the current week if either):
+//   (a) Its WeekOf field parses to the same Monday date as getWeekLabel(), OR
+//   (b) It has no WeekOf field and was created on or after this Monday midnight.
+// Condition (a) covers dashboard edits; condition (b) covers MS Form submissions
+// which Power Automate may leave without a WeekOf value.
 async function loadFromSharePoint() {
   setGridLoading()
   try {
     const initResult = await initMsal()
     if (!initResult) {
+      // MSAL failed to load — show whatever local data we have
       await loadLocalDataAndSync()
       renderAll()
       return
     }
 
-    // Not signed in → show sign in screen
+    // Not signed in → show the sign-in landing page
     const accounts = msalInstance.getAllAccounts()
     if (accounts.length === 0) {
       showFullPageState('signin')
@@ -113,28 +148,29 @@ async function loadFromSharePoint() {
     let token = typeof initResult === 'string' ? initResult : await getToken()
     if (!token) return
 
-    // Resolve site
+    // ── Resolve site ID ──────────────────────────────────────────────────────
     const siteResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/bcgov.sharepoint.com:/teams/12320-ConnectedServicesStrategicPriority`,
       { headers: { Authorization: `Bearer ${token}` } },
     )
-    if (!siteResp.ok) throw new Error('Cannot access SharePoint site')
+    if (!siteResp.ok) throw new Error(`Cannot access SharePoint site (${siteResp.status})`)
     const site = await siteResp.json()
     _siteId = site.id
 
-    // Resolve team data list
+    // ── Resolve team-data list ID ─────────────────────────────────────────────
     const listsResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists?$filter=displayName eq '${CONFIG.listName}'`,
       { headers: { Authorization: `Bearer ${token}` } },
     )
+    if (!listsResp.ok) throw new Error(`Cannot query SP lists (${listsResp.status})`)
     const lists = await listsResp.json()
     if (!lists.value?.length)
-      throw new Error(`List "${CONFIG.listName}" not found`)
+      throw new Error(`List "${CONFIG.listName}" not found — check CONFIG.listName`)
     _teamListId = lists.value[0].id
 
-    // Fetch TeamName column choices — these are the authoritative team roster.
-    // This means newly added teams appear on the dashboard immediately,
-    // even before they've submitted any data.
+    // ── Build team roster from TeamName column choices ────────────────────────
+    // This is the authoritative source: teams appear on the dashboard as soon
+    // as they are added to the SP column, even before their first submission.
     const colsResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/columns`,
       { headers: { Authorization: `Bearer ${token}` } },
@@ -149,18 +185,23 @@ async function loadFromSharePoint() {
         )
         console.log('[SP-LOAD] Team roster from column choices:', allTeamNames)
       }
+    } else {
+      console.warn('[SP-LOAD] Could not fetch column choices — falling back to history')
     }
 
-    // Fetch all items
+    // ── Fetch all list items ─────────────────────────────────────────────────
+    // $top=500 covers ~2 years of weekly submissions for 15 teams.
+    // If the list ever exceeds 500 items, add @odata.nextLink pagination here.
     const itemsResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$expand=fields&$top=500`,
       { headers: { Authorization: `Bearer ${token}` } },
     )
+    if (!itemsResp.ok) throw new Error(`Cannot fetch list items (${itemsResp.status})`)
     const items = await itemsResp.json()
     allHistoryItems = items.value || []
 
-    // Supplement allTeamNames with any teams found in history but not in column choices
-    // (handles teams that submitted data before being added to the choices list)
+    // Supplement roster with any team names found in history but missing from
+    // column choices (e.g. teams that submitted before being formally added).
     const teamNamesSet = new Set(allTeamNames)
     allHistoryItems.forEach((item) => {
       const teamName = item.fields?.TeamName
@@ -171,37 +212,21 @@ async function loadFromSharePoint() {
     )
     console.log('[SP-LOAD] Final team roster:', allTeamNames)
 
-    // Latest item per team for THIS week only.
-
-    // Belongs to this week if:
-    //   (a) WeekOf field matches this week label (dashboard edits / week-picker), OR
-    //   (b) no WeekOf and created on or after this Monday 00:00 local time (form submissions)
+    // ── Filter items to the current week ─────────────────────────────────────
     const currentWeek = getWeekLabel()
     const weekStart = getWeekStart()
     const byTeam = {}
-
-    // Parse WeekOf to a Date for comparison (handles both YYYY-MM-DD and DD-MM-YYYY formats)
-    function parseWeekOf(weekOfStr) {
-      if (!weekOfStr) return null
-      const parts = weekOfStr.split('-')
-      if (parts.length !== 3) return null
-      // Try YYYY-MM-DD first
-      if (parts[0].length === 4) {
-        return new Date(parts[0], parseInt(parts[1]) - 1, parts[2])
-      }
-      // Otherwise assume DD-MM-YYYY
-      return new Date(parts[2], parseInt(parts[1]) - 1, parts[0])
-    }
 
     allHistoryItems.forEach((item) => {
       const f = item.fields,
         team = f.TeamName
       if (!team) return
+
       const created = new Date(f.Created || item.createdDateTime)
       const weekOfDate = parseWeekOf(f.WeekOf)
       const currentWeekDate = parseWeekOf(currentWeek)
 
-      // Include if: WeekOf matches this week, OR entry was created this week
+      // See function-level comment above for the two-condition logic
       const belongsToThisWeek =
         (weekOfDate &&
           currentWeekDate &&
@@ -209,6 +234,8 @@ async function loadFromSharePoint() {
         created >= weekStart
 
       if (!belongsToThisWeek) return
+
+      // Keep the most recent entry per team if multiple exist for this week
       if (!byTeam[team]) {
         byTeam[team] = { fields: f, created, id: item.id }
       } else if (created > byTeam[team].created) {
@@ -216,6 +243,7 @@ async function loadFromSharePoint() {
       }
     })
 
+    // Build the `data` object from this week's entries
     data = {}
     Object.entries(byTeam).forEach(([team, { fields: f, id }]) => {
       data[team] = {
@@ -227,6 +255,7 @@ async function loadFromSharePoint() {
         escalatorNum: f.EscalatorNumber || '',
         depsIn: parseDepsIn(f.DependenciesIn),
         summary: f.WeekSummary || '',
+        _weekOf: f.WeekOf || currentWeek,
         _spId: id,
       }
     })
@@ -236,42 +265,45 @@ async function loadFromSharePoint() {
     await loadCoordFromSharePoint(token)
     showFullPageState('loaded')
   } catch (err) {
+    console.error('[SP-LOAD] Failed to load from SharePoint:', err.message, err)
+    // Don't leave the user on a blank loading screen — show sign-in which at
+    // least lets them retry. A more specific error message could be shown here
+    // by inspecting err.message for status codes.
     showFullPageState('signin')
   }
 }
 
-// ── SAVE TEAM TO SHAREPOINT ───────────────────────────────────────────────────
+// ── SAVE TEAM DATA ────────────────────────────────────────────────────────────
+// PATCH an existing item (teamData._spId set) or POST a new one.
+// On failure, falls back to localStorage, shows an error modal, and RE-THROWS
+// so the calling saveTeam() in ui.js knows not to close the modal or show a
+// false success toast.
+//
+// @param {string} team     - Team name (used as the SP TeamName field value)
+// @param {object} teamData - Team data object (see shape in config.js)
 async function saveTeamToSharePoint(team, teamData) {
   const statusEl = document.getElementById('modal-save-status')
   if (statusEl) statusEl.textContent = 'Saving...'
 
   console.log('[SP-SAVE] Starting save for team:', team)
-  console.log('[SP-SAVE] CONFIG.useSharePoint:', CONFIG.useSharePoint)
-  console.log('[SP-SAVE] _siteId:', _siteId ? 'present' : 'MISSING')
-  console.log('[SP-SAVE] _teamListId:', _teamListId ? 'present' : 'MISSING')
 
   if (!CONFIG.useSharePoint) {
-    console.warn('[SP-SAVE] SharePoint disabled, using localStorage')
     throw new Error('SharePoint disabled in CONFIG')
   }
   if (!_siteId || !_teamListId) {
-    console.error(
-      '[SP-SAVE] SharePoint IDs not initialized. _siteId:',
-      _siteId,
-      '_teamListId:',
-      _teamListId,
-    )
+    console.error('[SP-SAVE] SharePoint IDs not initialised. Reload required.')
     throw new Error(
-      'SharePoint not initialized - _siteId or _teamListId missing. Try refreshing the page.',
+      'SharePoint not initialised — try refreshing the page.',
     )
   }
+
+  // Declare token outside try so it is accessible in the catch block for
+  // the error report.
   let token = null
   try {
     token = await getToken()
     const fields = {
       TeamName: team,
-      // Note: WeekOf is read-only in SharePoint, cannot be set directly
-      // It's managed by the form submission process
       OverallStatus:
         teamData.status.charAt(0).toUpperCase() + teamData.status.slice(1),
       Highlight: teamData.highlight,
@@ -281,7 +313,9 @@ async function saveTeamToSharePoint(team, teamData) {
       DependenciesIn: JSON.stringify(teamData.depsIn || []),
       WeekSummary: teamData.summary,
     }
+
     if (teamData._spId) {
+      // Update existing item
       const patchResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items/${teamData._spId}/fields`,
         {
@@ -298,6 +332,7 @@ async function saveTeamToSharePoint(team, teamData) {
         throw new Error(`PATCH failed ${patchResp.status}: ${errDetail}`)
       }
     } else {
+      // Create new item
       const postResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items`,
         {
@@ -317,27 +352,28 @@ async function saveTeamToSharePoint(team, teamData) {
       if (created.id) {
         data[team]._spId = created.id
       } else {
-        throw new Error('No item ID returned from SharePoint')
+        throw new Error('No item ID returned from SharePoint after POST')
       }
     }
+
     console.log('[SP-SAVE] Success for team:', team)
     if (statusEl) statusEl.textContent = '✓ Saved to SharePoint'
     setTimeout(() => {
       if (statusEl) statusEl.textContent = ''
     }, 2500)
   } catch (e) {
-    console.error('[SP-SAVE] ERROR for team:', team, e)
+    console.error('[SP-SAVE] Error saving team:', team, e.message, e)
+
+    // Translate HTTP status codes to user-friendly messages
     const userMsg = e.message.includes('429')
       ? 'Too many requests (server busy). Try again in a moment.'
-      : e.message.includes('read-only')
-        ? 'SharePoint field configuration issue (WeekOf is read-only). Contact IT support.'
-        : e.message.includes('401')
-          ? 'Authentication expired. Please refresh the page.'
-          : e.message.includes('403')
-            ? 'Permission denied. Check your access or contact support.'
-            : `Save failed: ${e.message}`
+      : e.message.includes('401')
+        ? 'Authentication expired. Please refresh the page.'
+        : e.message.includes('403')
+          ? 'Permission denied. Check your access or contact support.'
+          : `Save failed: ${e.message}`
 
-    // Fallback to localStorage
+    // Persist locally so data is not lost
     const localData = {
       team,
       status: teamData.status,
@@ -348,12 +384,12 @@ async function saveTeamToSharePoint(team, teamData) {
       depsIn: teamData.depsIn || [],
       summary: teamData.summary,
       _weekOf: teamData._weekOf || getWeekLabel(),
-      _localOnly: true, // Flag to indicate this is local-only
+      _localOnly: true,
       _savedAt: new Date().toISOString(),
     }
     data[team] = localData
     localStorage.setItem('sitrep_team_' + team, JSON.stringify(localData))
-    renderGrid() // Update UI immediately
+    renderGrid() // reflect local save immediately
 
     const authInfo = debugAuth()
     const details = `Error: ${e.message}
@@ -365,10 +401,10 @@ Team: ${team}
 Time: ${new Date().toISOString()}
 
 Troubleshooting:
-• If you can see the dashboard but can't save, you may have read-only permissions
-• The 'WeekOf' field appears to be read-only - this is a SharePoint list configuration issue
+• If you can see the dashboard but cannot save, you may have read-only permissions
 • Try refreshing the page to re-authenticate
-• Contact support with this error details`
+• Contact support with this error detail`
+
     showErrorModal(
       'Team Save Failed',
       `${userMsg} Data saved locally and will sync when connection is restored.`,
@@ -379,23 +415,36 @@ Troubleshooting:
     setTimeout(() => {
       if (statusEl) statusEl.textContent = ''
     }, 3000)
-    throw e // re-throw so saveTeam() knows the SP save failed
+
+    // Re-throw so ui.js › saveTeam() knows the SP save failed and does not
+    // show a false success toast or close the modal.
+    throw e
   }
 }
 
-// ── COORDINATOR SHAREPOINT ────────────────────────────────────────────────────
+// ── COORDINATOR DATA ──────────────────────────────────────────────────────────
+// Load this week's coordinator entry from the SitRep Coordinator SP list.
+// Populates coord{} and coordItemId, then re-renders the summary banner.
+// Called at the end of every loadFromSharePoint().
+//
+// @param {string} [token] - Optional pre-fetched token; acquires one if absent.
 async function loadCoordFromSharePoint(token) {
   try {
     if (!token) token = await getToken()
     if (!token || !_siteId) return
 
+    // Resolve the coordinator list ID (cached in _coordListId after first load)
     const listsResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists?$filter=displayName eq '${CONFIG.coordListName}'`,
       { headers: { Authorization: `Bearer ${token}` } },
     )
+    if (!listsResp.ok) {
+      console.warn('[COORD-LOAD] Cannot query SP lists:', listsResp.status)
+      return
+    }
     const lists = await listsResp.json()
     if (!lists.value?.length) {
-      console.warn('SitRep Coordinator list not found')
+      console.warn('[COORD-LOAD] Coordinator list not found:', CONFIG.coordListName)
       return
     }
     _coordListId = lists.value[0].id
@@ -405,6 +454,10 @@ async function loadCoordFromSharePoint(token) {
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items?$expand=fields&$top=50`,
       { headers: { Authorization: `Bearer ${token}` } },
     )
+    if (!itemsResp.ok) {
+      console.warn('[COORD-LOAD] Cannot fetch coordinator items:', itemsResp.status)
+      return
+    }
     const items = await itemsResp.json()
     const match = (items.value || []).find((i) => i.fields.WeekOf === weekLabel)
 
@@ -422,7 +475,10 @@ async function loadCoordFromSharePoint(token) {
       coordItemId = null
       coord = {}
     }
+
     updateSummary()
+
+    // If the coordinator panel is open, refresh its fields live
     if (coordOpen) {
       document.getElementById('coord-status').value = coord.status || ''
       document.getElementById('coord-news').value = coord.news || ''
@@ -430,20 +486,32 @@ async function loadCoordFromSharePoint(token) {
       renderMeetingsList()
     }
   } catch (e) {
-    console.warn('Could not load coordinator data:', e)
+    console.warn('[COORD-LOAD] Could not load coordinator data:', e.message, e)
   }
 }
 
+// Save the current coord{} object to the SitRep Coordinator SP list.
+// PATCH if coordItemId exists (this week's entry already created), POST if not.
+// Falls back to localStorage on any error and shows an error modal.
 async function saveCoordToSharePoint() {
   const savingEl = document.getElementById('coord-saving')
   if (savingEl) savingEl.textContent = 'Saving...'
+
   try {
     const token = await getToken()
+
+    // If SP infrastructure is not ready (e.g. called before load completes),
+    // save locally and bail out quietly.
     if (!token || !_siteId || !_coordListId) {
+      console.warn('[COORD-SAVE] SP not ready — saving locally')
       localStorage.setItem('sitrep_coord', JSON.stringify(coord))
-      if (savingEl) savingEl.textContent = ''
+      if (savingEl) savingEl.textContent = '⚠ Saved locally (SP not ready)'
+      setTimeout(() => {
+        if (savingEl) savingEl.textContent = ''
+      }, 3000)
       return
     }
+
     const fields = {
       WeekOf: getWeekLabel(),
       OverallStatus: coord.status || '',
@@ -452,6 +520,7 @@ async function saveCoordToSharePoint() {
       FeaturedHighlights: JSON.stringify(coord.featuredHighlights || []),
       FeaturedBlockers: JSON.stringify(coord.featuredBlockers || []),
     }
+
     if (coordItemId) {
       const patchResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items/${coordItemId}/fields`,
@@ -488,23 +557,27 @@ async function saveCoordToSharePoint() {
       if (created.id) {
         coordItemId = created.id
       } else {
-        throw new Error('No item ID returned from SharePoint')
+        throw new Error('No item ID returned from SharePoint after POST')
       }
     }
+
     if (savingEl) savingEl.textContent = '✓ Saved'
     setTimeout(() => {
       if (savingEl) savingEl.textContent = ''
     }, 2000)
   } catch (e) {
-    console.error('ERROR: Could not save coordinator data:', e.message, e)
+    console.error('[COORD-SAVE] Error:', e.message, e)
+
+    // Always save locally so coordinator data is not lost
     localStorage.setItem('sitrep_coord', JSON.stringify(coord))
+
     const userMsg = e.message.includes('429')
-      ? 'Server busy (rate limit). Saved locally—will sync when available.'
+      ? 'Server busy (rate limit). Saved locally — will sync when available.'
       : e.message.includes('401')
         ? 'Authentication expired. Saved locally. Please refresh.'
         : e.message.includes('403')
           ? 'Permission denied. Saved locally. Check your access or contact support.'
-          : `Could not reach SharePoint. Saved locally.`
+          : 'Could not reach SharePoint. Saved locally.'
 
     const authInfo = debugAuth()
     const details = `Error: ${e.message}
@@ -514,18 +587,21 @@ Scopes: ${authInfo.scopes.join(', ')}
 Time: ${new Date().toISOString()}
 
 Troubleshooting:
-• If you can see the dashboard but can't save, you may have read-only permissions
+• If you can see the dashboard but cannot save, you may have read-only permissions
 • Try refreshing the page to re-authenticate
-• Contact support with this error details`
+• Contact support with this error detail`
+
     showErrorModal('Coordinator Save Failed', userMsg, details)
 
-    if (savingEl) savingEl.textContent = `⚠ Saved locally`
+    if (savingEl) savingEl.textContent = '⚠ Saved locally'
     setTimeout(() => {
       if (savingEl) savingEl.textContent = ''
     }, 3000)
   }
 }
 
+// Debounce coordinator saves to avoid hammering the Graph API on every
+// keystroke. Fires 800 ms after the last change.
 function debounceSave() {
   clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {

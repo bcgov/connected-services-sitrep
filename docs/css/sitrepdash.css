@@ -901,36 +901,6 @@ textarea {
   background: var(--primary-hover);
 }
 
-/* ── TEAM MANAGEMENT ── */
-.team-btn {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 6px;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  font-family: 'BCSans', sans-serif;
-  transition: all 0.15s;
-  border: 1px solid;
-}
-.team-btn.rename {
-  background: #fff;
-  color: #003366;
-  border-color: #cbd5e1;
-}
-.team-btn.rename:hover {
-  background: #f0f9ff;
-  border-color: #003366;
-}
-.team-btn.remove {
-  background: #f3e5e5;
-  color: #c41c3b;
-  border-color: #f3e5e5;
-}
-.team-btn.remove:hover {
-  background: #fee2e2;
-  border-color: #dc2626;
-}
-
 /* ── HISTORY VIEW ── */
 .history-view {
   display: none;

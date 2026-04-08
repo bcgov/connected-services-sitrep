@@ -1,4 +1,29 @@
 <!doctype html>
+<!--
+  SitRep RYG Dashboard — Connected Services
+  ==========================================
+  Stack: Vanilla HTML/CSS/JS · GitHub Pages · Microsoft Graph API · MSAL 2.38
+
+  There is no build step. Files are served directly from /docs via GitHub Pages.
+
+  Script load order (order matters — no module system):
+    1. config.js   — CONFIG object, DEFAULT_TEAMS, all shared `let` state
+    2. utils.js    — pure helpers: esc(), safeJSON(), date utils, showToast(), showErrorModal()
+    3. render.js   — DOM rendering: renderAll(), renderGrid(), history view
+    4. sharepoint.js — Graph API calls: load/save team data and coordinator data
+    5. auth.js     — MSAL init, getToken(), signIn()
+    6. ui.js       — init(), modal, coordinator panel, filter, meetings, CSV, auto-refresh
+    7. msal-browser.min.js (CDN) — loaded last; its `onload` fires init() to start the app
+
+  Authentication flow:
+    MSAL loads → init() → loadFromSharePoint() → initMsal() → handleRedirectPromise()
+    No session → showFullPageState('signin') — user clicks Sign In → loginPopup()
+    Session OK → getToken() → Graph API calls → renderAll() → showFullPageState('loaded')
+
+  Live URLs:
+    Dashboard: https://bcgov.github.io/connected-services-sitrep/sitrepdash.html
+    Repo:      https://github.com/bcgov/connected-services-sitrep
+-->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -279,8 +304,7 @@
                 line-height: 1.4;
               "
             >
-              ⓘ Adding/removing teams will sync to all users. Remember to update
-              the MS Form team selection.
+              ⓘ Teams are managed in SharePoint and the MS Form. Click "Add Team" above for step-by-step instructions.
             </div>
           </div>
           <div
@@ -298,7 +322,7 @@
                 margin-bottom: 10px;
               "
             >
-              �📅 Meetings this week
+              📅 Meetings this week
             </div>
             <div
               id="meetings-list"
@@ -559,22 +583,9 @@
               ><span class="sr-only">(required)</span></label
             >
             <select id="f-team" aria-required="true">
+              <!-- Options are populated dynamically by buildTeamSelect() in ui.js
+                   from the live SP TeamName column choices — do not hardcode here. -->
               <option value="">Select team...</option>
-              <option>BCSC</option>
-              <option>EFV</option>
-              <option>SDG</option>
-              <option>ADR</option>
-              <option>CHEFS</option>
-              <option>Notify</option>
-              <option>Workflow</option>
-              <option>DDS</option>
-              <option>SDX</option>
-              <option>DevX</option>
-              <option>CSTAR</option>
-              <option>Disability Services</option>
-              <option>SSI</option>
-              <option>SDPR/SDD</option>
-              <option>ACT</option>
             </select>
           </div>
           <fieldset style="border: none; padding: 0; margin-bottom: 16px">
