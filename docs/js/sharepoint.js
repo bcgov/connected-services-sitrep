@@ -296,11 +296,11 @@ async function saveTeamToSharePoint(team, teamData) {
       ? 'Too many requests (server busy). Try again in a moment.'
       : e.message.includes('read-only')
         ? 'SharePoint field configuration issue (WeekOf is read-only). Contact IT support.'
-      : e.message.includes('401')
-        ? 'Authentication expired. Please refresh the page.'
-        : e.message.includes('403')
-          ? 'Permission denied. Check your access or contact support.'
-          : `Save failed: ${e.message}`
+        : e.message.includes('401')
+          ? 'Authentication expired. Please refresh the page.'
+          : e.message.includes('403')
+            ? 'Permission denied. Check your access or contact support.'
+            : `Save failed: ${e.message}`
 
     // Fallback to localStorage
     const localData = {
