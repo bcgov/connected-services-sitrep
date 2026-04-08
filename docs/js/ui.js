@@ -704,7 +704,9 @@ async function saveTeamsRegistry(token, teamsList) {
   // Create or update a registry item in SharePoint that tracks all teams
   // This allows other users/sessions to sync the team list
   if (!_siteId || !_teamListId) {
-    console.error('[TEAM-MGMT] Cannot save registry: _siteId or _teamListId not set')
+    console.error(
+      '[TEAM-MGMT] Cannot save registry: _siteId or _teamListId not set',
+    )
     return
   }
 
@@ -725,7 +727,9 @@ async function saveTeamsRegistry(token, teamsList) {
       { headers: { Authorization: `Bearer ${token}` } },
     )
     if (!searchResp.ok) {
-      throw new Error(`Registry search failed ${searchResp.status}: ${searchResp.statusText}`)
+      throw new Error(
+        `Registry search failed ${searchResp.status}: ${searchResp.statusText}`,
+      )
     }
     const search = await searchResp.json()
     const registryItems = (search.value || []).filter(
@@ -752,7 +756,9 @@ async function saveTeamsRegistry(token, teamsList) {
         },
       )
       if (!updateResp.ok) {
-        throw new Error(`PATCH failed ${updateResp.status}: ${updateResp.statusText}`)
+        throw new Error(
+          `PATCH failed ${updateResp.status}: ${updateResp.statusText}`,
+        )
       }
       console.log('[TEAM-MGMT] Registry updated successfully')
     } else {
@@ -770,7 +776,9 @@ async function saveTeamsRegistry(token, teamsList) {
         },
       )
       if (!createResp.ok) {
-        throw new Error(`POST failed ${createResp.status}: ${createResp.statusText}`)
+        throw new Error(
+          `POST failed ${createResp.status}: ${createResp.statusText}`,
+        )
       }
       console.log('[TEAM-MGMT] Registry created successfully')
     }
@@ -783,7 +791,9 @@ async function saveTeamsRegistry(token, teamsList) {
 async function syncTeamsFromSharePoint(token) {
   // On load, check if there's an updated team list in SharePoint
   if (!_siteId || !_teamListId) {
-    console.warn('[TEAM-MGMT] Cannot sync teams: _siteId or _teamListId not set')
+    console.warn(
+      '[TEAM-MGMT] Cannot sync teams: _siteId or _teamListId not set',
+    )
     return
   }
 
@@ -795,7 +805,9 @@ async function syncTeamsFromSharePoint(token) {
       { headers: { Authorization: `Bearer ${token}` } },
     )
     if (!searchResp.ok) {
-      throw new Error(`Registry fetch failed ${searchResp.status}: ${searchResp.statusText}`)
+      throw new Error(
+        `Registry fetch failed ${searchResp.status}: ${searchResp.statusText}`,
+      )
     }
     const search = await searchResp.json()
     const registryItems = (search.value || []).filter(
@@ -804,7 +816,10 @@ async function syncTeamsFromSharePoint(token) {
         item.fields?.TeamName === '__TEAMS_REGISTRY__',
     )
 
-    console.log('[TEAM-MGMT] Found registry items for sync:', registryItems.length)
+    console.log(
+      '[TEAM-MGMT] Found registry items for sync:',
+      registryItems.length,
+    )
 
     if (registryItems.length > 0) {
       const registryItem = registryItems[0]
@@ -822,7 +837,10 @@ async function syncTeamsFromSharePoint(token) {
             renderTeamsList()
             renderGrid()
           } else {
-            console.warn('[TEAM-MGMT] Highlight field is not a valid array:', highlight)
+            console.warn(
+              '[TEAM-MGMT] Highlight field is not a valid array:',
+              highlight,
+            )
           }
         } catch (e) {
           console.warn('[TEAM-MGMT] Could not parse synced teams:', e.message)
