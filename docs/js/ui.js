@@ -6,6 +6,7 @@ function init() {
   buildDepsPicker()
   if (CONFIG.useSharePoint) {
     document.getElementById('csv-controls').style.display = 'none'
+    _teamRegistryItemId = localStorage.getItem('sitrep_team_registry_id')
     if (window.msal) {
       loadFromSharePoint()
     } else {
@@ -754,6 +755,8 @@ async function saveTeamsRegistry(token, teamsList) {
     if (registryItems.length > 0) {
       // Update existing
       const itemId = registryItems[0].id
+      _teamRegistryItemId = itemId
+      localStorage.setItem('sitrep_team_registry_id', itemId)
       console.log('[TEAM-MGMT] Updating existing registry item:', itemId)
       const updateResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items/${itemId}/fields`,
@@ -791,7 +794,12 @@ async function saveTeamsRegistry(token, teamsList) {
           `POST failed ${createResp.status}: ${createResp.statusText}`,
         )
       }
-      console.log('[TEAM-MGMT] Registry created successfully')
+      const created = await createResp.json()
+      if (created?.id) {
+        _teamRegistryItemId = created.id
+        localStorage.setItem('sitrep_team_registry_id', created.id)
+      }
+      console.log('[TEAM-MGMT] Registry created successfully', created?.id)
     }
   } catch (e) {
     console.error('[TEAM-MGMT] Could not save teams registry:', e.message)
@@ -812,40 +820,92 @@ async function syncTeamsFromSharePoint(token) {
   console.log('[TEAM-MGMT] Current TEAMS before sync:', [...TEAMS])
 
   try {
-    const searchResp = await fetch(
-      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$expand=fields&$top=500`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    )
-    if (!searchResp.ok) {
-      throw new Error(
-        `Registry fetch failed ${searchResp.status}: ${searchResp.statusText}`,
+    let registryItem = null
+
+    if (_teamRegistryItemId) {
+      console.log(
+        '[TEAM-MGMT] Trying direct registry fetch by saved ID:',
+        _teamRegistryItemId,
       )
+      try {
+        const directResp = await fetch(
+          `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items/${_teamRegistryItemId}?$expand=fields`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+        if (directResp.ok) {
+          const directItem = await directResp.json()
+          console.log(
+            '[TEAM-MGMT] Direct registry item fetched:',
+            directItem?.fields,
+          )
+          if (
+            directItem?.fields?.Title === '__TEAMS_REGISTRY__' ||
+            directItem?.fields?.TeamName === '__TEAMS_REGISTRY__'
+          ) {
+            registryItem = directItem
+            console.log('[TEAM-MGMT] Using direct registry item from saved ID')
+          } else {
+            console.log(
+              '[TEAM-MGMT] Direct registry item did not match sentinel fields',
+            )
+          }
+        } else {
+          console.warn(
+            '[TEAM-MGMT] Direct fetch failed for saved registry ID:',
+            directResp.status,
+            directResp.statusText,
+          )
+        }
+      } catch (err) {
+        console.warn('[TEAM-MGMT] Direct registry fetch error:', err.message)
+      }
     }
-    const search = await searchResp.json()
-    console.log(
-      '[TEAM-MGMT] All items in list for sync:',
-      search.value?.length,
-      'items',
-    )
-    console.log(
-      '[TEAM-MGMT] First few items for sync:',
-      search.value?.slice(0, 3),
-    )
-    const registryItems = (search.value || []).filter(
-      (item) =>
-        item.fields?.Title === '__TEAMS_REGISTRY__' ||
-        item.fields?.TeamName === '__TEAMS_REGISTRY__',
-    )
 
-    console.log(
-      '[TEAM-MGMT] Found registry items for sync:',
-      registryItems.length,
-    )
+    if (!registryItem) {
+      const searchResp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$expand=fields&$top=500`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      if (!searchResp.ok) {
+        throw new Error(
+          `Registry fetch failed ${searchResp.status}: ${searchResp.statusText}`,
+        )
+      }
+      const search = await searchResp.json()
+      console.log(
+        '[TEAM-MGMT] All items in list for sync:',
+        search.value?.length,
+        'items',
+      )
+      console.log(
+        '[TEAM-MGMT] First few items for sync:',
+        search.value?.slice(0, 3),
+      )
+      const registryItems = (search.value || []).filter(
+        (item) =>
+          item.fields?.Title === '__TEAMS_REGISTRY__' ||
+          item.fields?.TeamName === '__TEAMS_REGISTRY__',
+      )
 
-    if (registryItems.length > 0) {
-      console.log('[TEAM-MGMT] Registry items:', registryItems)
-      const registryItem = registryItems[0]
-      console.log('[TEAM-MGMT] Using registry item:', registryItem.fields)
+      console.log(
+        '[TEAM-MGMT] Found registry items for sync:',
+        registryItems.length,
+      )
+
+      if (registryItems.length > 0) {
+        registryItem = registryItems[0]
+      }
+    }
+
+    if (registryItem) {
+      if (registryItem.id) {
+        _teamRegistryItemId = registryItem.id
+        localStorage.setItem('sitrep_team_registry_id', registryItem.id)
+      }
+      console.log(
+        '[TEAM-MGMT] Registry item chosen for sync:',
+        registryItem.fields,
+      )
       const highlight = registryItem.fields?.Highlight
       console.log('[TEAM-MGMT] Highlight field:', highlight)
       if (highlight) {
