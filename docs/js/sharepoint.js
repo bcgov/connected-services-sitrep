@@ -132,6 +132,25 @@ async function loadFromSharePoint() {
       throw new Error(`List "${CONFIG.listName}" not found`)
     _teamListId = lists.value[0].id
 
+    // Fetch TeamName column choices — these are the authoritative team roster.
+    // This means newly added teams appear on the dashboard immediately,
+    // even before they've submitted any data.
+    const colsResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/columns`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    if (colsResp.ok) {
+      const cols = await colsResp.json()
+      const teamCol = (cols.value || []).find((c) => c.name === 'TeamName')
+      const choices = teamCol?.choice?.choices || []
+      if (choices.length) {
+        allTeamNames = [...choices].sort((a, b) =>
+          a.localeCompare(b, undefined, { sensitivity: 'base' }),
+        )
+        console.log('[SP-LOAD] Team roster from column choices:', allTeamNames)
+      }
+    }
+
     // Fetch all items
     const itemsResp = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$expand=fields&$top=500`,
@@ -140,8 +159,9 @@ async function loadFromSharePoint() {
     const items = await itemsResp.json()
     allHistoryItems = items.value || []
 
-    // Extract all unique team names from the entire history
-    const teamNamesSet = new Set()
+    // Supplement allTeamNames with any teams found in history but not in column choices
+    // (handles teams that submitted data before being added to the choices list)
+    const teamNamesSet = new Set(allTeamNames)
     allHistoryItems.forEach((item) => {
       const teamName = item.fields?.TeamName
       if (teamName) teamNamesSet.add(teamName)
@@ -149,7 +169,7 @@ async function loadFromSharePoint() {
     allTeamNames = Array.from(teamNamesSet).sort((a, b) =>
       a.localeCompare(b, undefined, { sensitivity: 'base' }),
     )
-    console.log('[SP-LOAD] Found teams in SharePoint history:', allTeamNames)
+    console.log('[SP-LOAD] Final team roster:', allTeamNames)
 
     // Latest item per team for THIS week only.
 
