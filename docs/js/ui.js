@@ -166,7 +166,7 @@ function closeModalOutside(e) {
   if (e.target === document.getElementById('modal-overlay')) closeModal()
 }
 
-function saveTeam() {
+async function saveTeam() {
   const team = document.getElementById('f-team').value
   if (!team || !selectedRYG) {
     showToast('Please select a status')
@@ -185,13 +185,31 @@ function saveTeam() {
     _spId: data[team]?._spId || null,
   }
   data[team] = teamData
-  if (!CONFIG.useSharePoint)
+  console.log('[SAVE] Attempting to save:', team, teamData)
+  
+  if (!CONFIG.useSharePoint) {
+    console.log('[SAVE] Using localStorage (SharePoint disabled)')
     localStorage.setItem('sitrep_v2', JSON.stringify(data))
-  else saveTeamToSharePoint(team, teamData)
-  renderAll()
-  renderFeaturedChips()
-  showToast('✓ ' + team + ' saved!')
-  setTimeout(() => closeModal(), 1200)
+    renderAll()
+    renderFeaturedChips()
+    showToast('✓ ' + team + ' saved locally!')
+    setTimeout(() => closeModal(), 1200)
+  } else {
+    console.log('[SAVE] Calling saveTeamToSharePoint for SharePoint...')
+    try {
+      await saveTeamToSharePoint(team, teamData)
+      console.log('[SAVE] Save succeeded')
+      // Only update UI and close on success
+      renderAll()
+      renderFeaturedChips()
+      showToast('✓ ' + team + ' saved to SharePoint!')
+      setTimeout(() => closeModal(), 1200)
+    } catch (e) {
+      console.error('[SAVE] Save failed:', e)
+      // Error modal is shown inside saveTeamToSharePoint
+      // Keep modal open so user can see error and try again
+    }
+  }
 }
 
 // Focus trap in modal

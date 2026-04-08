@@ -208,9 +208,22 @@ async function loadFromSharePoint() {
 
 // ── SAVE TEAM TO SHAREPOINT ───────────────────────────────────────────────────
 async function saveTeamToSharePoint(team, teamData) {
-  if (!CONFIG.useSharePoint || !_siteId || !_teamListId) return
   const statusEl = document.getElementById('modal-save-status')
   if (statusEl) statusEl.textContent = 'Saving...'
+  
+  console.log('[SP-SAVE] Starting save for team:', team)
+  console.log('[SP-SAVE] CONFIG.useSharePoint:', CONFIG.useSharePoint)
+  console.log('[SP-SAVE] _siteId:', _siteId ? 'present' : 'MISSING')
+  console.log('[SP-SAVE] _teamListId:', _teamListId ? 'present' : 'MISSING')
+  
+  if (!CONFIG.useSharePoint) {
+    console.warn('[SP-SAVE] SharePoint disabled, using localStorage')
+    throw new Error('SharePoint disabled in CONFIG')
+  }
+  if (!_siteId || !_teamListId) {
+    console.error('[SP-SAVE] SharePoint IDs not initialized. _siteId:', _siteId, '_teamListId:', _teamListId)
+    throw new Error('SharePoint not initialized - _siteId or _teamListId missing. Try refreshing the page.')
+  }
   try {
     const token = await getToken()
     const fields = {
@@ -264,12 +277,14 @@ async function saveTeamToSharePoint(team, teamData) {
         throw new Error('No item ID returned from SharePoint')
       }
     }
+    console.log('[SP-SAVE] Success for team:', team)
     if (statusEl) statusEl.textContent = '✓ Saved to SharePoint'
     setTimeout(() => {
       if (statusEl) statusEl.textContent = ''
     }, 2500)
   } catch (e) {
-    console.error('ERROR: Could not save team to SharePoint:', e.message, e)
+    console.error('[SP-SAVE] ERROR for team:', team, e)
+    console.error('[SP-SAVE] ERROR for team:', team, e.message, e)
     const userMsg = e.message.includes('429')
       ? 'Too many requests (server busy). Try again in a moment.'
       : e.message.includes('401')
