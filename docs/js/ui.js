@@ -168,8 +168,20 @@ function closeModalOutside(e) {
 
 async function saveTeam() {
   const team = document.getElementById('f-team').value
-  if (!team || !selectedRYG) {
-    showToast('Please select a status')
+  const highlight = document.getElementById('f-highlight').value.trim()
+  
+  // Validate required fields
+  const missing = []
+  if (!team) missing.push('Team name')
+  if (!selectedRYG) missing.push('Status (Red/Yellow/Green)')
+  if (!highlight) missing.push('Key Highlight')
+  
+  if (missing.length > 0) {
+    showErrorModal(
+      'Required Fields Missing',
+      `Please fill in all required fields before saving:\n\n${missing.map(f => '• ' + f).join('\n')}`,
+      ''
+    )
     return
   }
   const teamData = {
