@@ -574,12 +574,12 @@ async function addTeamToSharePoint(teamName) {
 
     showErrorModal(
       '✅ Team Added Successfully',
-      `"${teamName}" has been added and is now available to all users.<br><br><strong>Next steps:</strong><ul style="padding-left:18px;margin:8px 0;line-height:1.6;">` +
-        `<li>Update the MS Form to include "${teamName}" in the team selection question — <a href="https://forms.office.com/" target="_blank">Edit the form</a></li>` +
-        `<li>Add "${teamName}" to the dependency dropdown in the app</li>` +
-        `<li>Add "${teamName}" to the SharePoint <strong>TeamName</strong> choice list — <a href="https://bcgov.sharepoint.com/teams/12320-ConnectedServicesStrategicPriority/Lists/Weekly%20SitRep%20Data/AllItems.aspx" target="_blank">Open SharePoint list</a></li>` +
+      `"${teamName}" has been added to the registry, but dropdown values must be updated manually.<br><br><strong>Next steps:</strong><ul style="padding-left:18px;margin:8px 0;line-height:1.6;">` +
+        `<li>Update the MS Form team selection question: <a href="https://forms.office.com/r/5qzNa4JpH9" target="_blank">Edit the form</a></li>` +
+        `<li>Add "${teamName}" to the app dependency dropdown if it is a dependency for other teams</li>` +
+        `<li>Add "${teamName}" to the SharePoint <strong>TeamName</strong> choice list: <a href="https://bcgov.sharepoint.com/teams/12320-ConnectedServicesStrategicPriority/Lists/Weekly%20SitRep%20Data/AllItems.aspx" target="_blank">Open SharePoint list</a></li>` +
         `<li>Add "${teamName}" to the SharePoint <strong>DependenciesIn</strong> choice list</li></ul>` +
-        `<div style="margin-top:10px;color:#555;">The change will sync to all connected users automatically.</div>`,
+        `<div style="margin-top:10px;color:#555;">After these updates, the change will sync for all connected users.</div>`,
       '',
     )
 
@@ -806,73 +806,10 @@ async function saveTeamsRegistry(token, teamsList) {
       }
       console.log('[TEAM-MGMT] Registry created successfully', created?.id)
     }
-
-    try {
-      await syncTeamFieldChoices(token, teamsList)
-      console.log('[TEAM-MGMT] Team dropdown choices synced successfully')
-    } catch (e) {
-      console.warn(
-        '[TEAM-MGMT] Could not sync team dropdown choices:',
-        e.message,
-      )
-    }
   } catch (e) {
     console.error('[TEAM-MGMT] Could not save teams registry:', e.message)
     // Non-critical, continue anyway
   }
-}
-
-async function getListColumnDefinition(token, columnName) {
-  const resp = await fetch(
-    `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/columns`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  )
-  if (!resp.ok) {
-    throw new Error(`Could not load columns: ${resp.status}`)
-  }
-  const json = await resp.json()
-  const column = (json.value || []).find(
-    (col) =>
-      col.name === columnName ||
-      col.displayName === columnName ||
-      col.name === columnName.replace(/\s+/g, '') ||
-      col.displayName === columnName.replace(/\s+/g, ''),
-  )
-  if (!column) {
-    throw new Error(`List column ${columnName} not found`)
-  }
-  return column
-}
-
-async function patchListColumnChoices(token, columnName, choices) {
-  const column = await getListColumnDefinition(token, columnName)
-  const resp = await fetch(
-    `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/columns/${column.id}`,
-    {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        choices,
-        allowTextEntry: true,
-      }),
-    },
-  )
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '')
-    throw new Error(
-      `Could not update ${columnName} choices: ${resp.status} ${resp.statusText} ${text}`,
-    )
-  }
-  return await resp.json()
-}
-
-async function syncTeamFieldChoices(token, teamsList) {
-  const sortedTeams = [...teamsList].sort()
-  await patchListColumnChoices(token, 'TeamName', sortedTeams)
-  await patchListColumnChoices(token, 'DependenciesIn', sortedTeams)
 }
 
 async function syncTeamsFromSharePoint(token) {
