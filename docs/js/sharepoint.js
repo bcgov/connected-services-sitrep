@@ -140,7 +140,19 @@ async function loadFromSharePoint() {
     const items = await itemsResp.json()
     allHistoryItems = items.value || []
 
+    // Extract all unique team names from the entire history
+    const teamNamesSet = new Set()
+    allHistoryItems.forEach((item) => {
+      const teamName = item.fields?.TeamName
+      if (teamName) teamNamesSet.add(teamName)
+    })
+    allTeamNames = Array.from(teamNamesSet).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: 'base' }),
+    )
+    console.log('[SP-LOAD] Found teams in SharePoint history:', allTeamNames)
+
     // Latest item per team for THIS week only.
+
     // Belongs to this week if:
     //   (a) WeekOf field matches this week label (dashboard edits / week-picker), OR
     //   (b) no WeekOf and created on or after this Monday 00:00 local time (form submissions)
@@ -233,8 +245,9 @@ async function saveTeamToSharePoint(team, teamData) {
       'SharePoint not initialized - _siteId or _teamListId missing. Try refreshing the page.',
     )
   }
+  let token = null
   try {
-    const token = await getToken()
+    token = await getToken()
     const fields = {
       TeamName: team,
       // Note: WeekOf is read-only in SharePoint, cannot be set directly
@@ -346,6 +359,7 @@ Troubleshooting:
     setTimeout(() => {
       if (statusEl) statusEl.textContent = ''
     }, 3000)
+    throw e // re-throw so saveTeam() knows the SP save failed
   }
 }
 

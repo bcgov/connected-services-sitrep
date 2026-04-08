@@ -457,9 +457,9 @@ function clearAll() {
 
 // ── TEAM MANAGEMENT (COORDINATOR PANEL) ──────────────────────────────────────
 function getRosterTeams() {
-  return [...new Set([...DEFAULT_TEAMS, ...Object.keys(data)])].sort((a, b) =>
-    a.localeCompare(b, undefined, { sensitivity: 'base' }),
-  )
+  return [
+    ...new Set([...DEFAULT_TEAMS, ...Object.keys(data), ...allTeamNames]),
+  ].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
 }
 
 function renderTeamsList() {
@@ -485,61 +485,6 @@ function buildTeamSelect() {
     teams
       .map((team) => `<option value="${esc(team)}">${esc(team)}</option>`)
       .join('')
-}
-
-function parseTeamLabel(label) {
-  const parts = label.split(' — ')
-  if (parts.length === 2) {
-    return { acronym: parts[0], teamName: parts[1] }
-  }
-  return { acronym: '', teamName: label }
-}
-
-function makeTeamLabel(teamName, acronym) {
-  const name = teamName.trim()
-  if (!name) return ''
-  const acro = (acronym || '').trim()
-  return acro ? `${acro} — ${name}` : name
-}
-
-function closeTeamDialog() {
-  const overlay = document.getElementById('team-dialog-overlay')
-  if (overlay) overlay.remove()
-}
-
-function showTeamDialog({ title, teamName = '', acronym = '', onSave }) {
-  closeTeamDialog()
-  const overlay = document.createElement('div')
-  overlay.id = 'team-dialog-overlay'
-  overlay.style.cssText =
-    'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;'
-  overlay.innerHTML = `
-    <div style="background:white;border-radius:14px;max-width:420px;width:100%;padding:24px;box-shadow:0 18px 40px rgba(0,0,0,0.18);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-        <h3 style="margin:0;font-size:18px;color:#0f172a;">${esc(title)}</h3>
-        <button type="button" onclick="closeTeamDialog()" style="border:none;background:none;color:#334155;font-size:20px;cursor:pointer;">✕</button>
-      </div>
-      <div style="display:grid;gap:14px;">
-        <label style="font-size:13px;color:#334155;">Team Name<span style="color:#dc2626;">*</span><input id="team-dialog-name" value="${esc(teamName)}" style="width:100%;margin-top:6px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;" /></label>
-        <label style="font-size:13px;color:#334155;">Acronym (optional)<input id="team-dialog-acronym" value="${esc(acronym)}" style="width:100%;margin-top:6px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;" /></label>
-      </div>
-      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;">
-        <button type="button" onclick="closeTeamDialog()" style="padding:10px 14px;font-size:13px;background:#f8fafc;color:#334155;border:1px solid #cbd5e1;border-radius:10px;cursor:pointer;">Cancel</button>
-        <button type="button" id="team-dialog-save" style="padding:10px 14px;font-size:13px;background:#003366;color:white;border:none;border-radius:10px;cursor:pointer;">Save</button>
-      </div>
-    </div>`
-  document.body.appendChild(overlay)
-  document.getElementById('team-dialog-save').onclick = () => {
-    const name = document.getElementById('team-dialog-name').value.trim()
-    const acro = document.getElementById('team-dialog-acronym').value.trim()
-    if (!name) {
-      showToast('Please enter a team name')
-      return
-    }
-    onSave(name, acro)
-    closeTeamDialog()
-  }
-  setTimeout(() => document.getElementById('team-dialog-name').focus(), 50)
 }
 
 function openAddTeamModal() {

@@ -30,6 +30,7 @@ const DEFAULT_TEAMS = [
 let data = {} // current week team data keyed by team name
 let coord = {} // coordinator data (news, meetings, featured etc)
 let allHistoryItems = [] // raw SharePoint items for history view
+let allTeamNames = [] // all unique team names from SharePoint history
 
 let currentFilter = 'all'
 let selectedRYG = null
@@ -44,4 +45,4 @@ let _coordListId = null
 let _teamListId = null
 
 let saveTimer = null
-let autoRefreshTimer = null // debounce timer for coordinator saves
+let autoRefreshTimer = null // interval timer for smart auto-refresh
