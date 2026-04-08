@@ -801,10 +801,64 @@ async function saveTeamsRegistry(token, teamsList) {
       }
       console.log('[TEAM-MGMT] Registry created successfully', created?.id)
     }
+
+    try {
+      await syncTeamFieldChoices(token, teamsList)
+      console.log('[TEAM-MGMT] Team dropdown choices synced successfully')
+    } catch (e) {
+      console.warn(
+        '[TEAM-MGMT] Could not sync team dropdown choices:',
+        e.message,
+      )
+    }
   } catch (e) {
     console.error('[TEAM-MGMT] Could not save teams registry:', e.message)
     // Non-critical, continue anyway
   }
+}
+
+async function getListColumnDefinition(token, columnName) {
+  const resp = await fetch(
+    `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/columns?$filter=name eq '${columnName}'`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  )
+  if (!resp.ok) {
+    throw new Error(`Could not load column ${columnName}: ${resp.status}`)
+  }
+  const json = await resp.json()
+  const column = json.value?.[0]
+  if (!column) {
+    throw new Error(`List column ${columnName} not found`)
+  }
+  return column
+}
+
+async function patchListColumnChoices(token, columnName, choices) {
+  const column = await getListColumnDefinition(token, columnName)
+  const resp = await fetch(
+    `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/columns/${column.id}`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        choices,
+        fillInChoice: true,
+      }),
+    },
+  )
+  if (!resp.ok) {
+    throw new Error(`Could not update ${columnName} choices: ${resp.status}`)
+  }
+  return await resp.json()
+}
+
+async function syncTeamFieldChoices(token, teamsList) {
+  const sortedTeams = [...teamsList].sort()
+  await patchListColumnChoices(token, 'TeamName', sortedTeams)
+  await patchListColumnChoices(token, 'DependenciesIn', sortedTeams)
 }
 
 async function syncTeamsFromSharePoint(token) {
