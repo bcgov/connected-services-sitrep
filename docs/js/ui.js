@@ -711,7 +711,6 @@ async function saveTeamsRegistry(token, teamsList) {
   }
 
   console.log('[TEAM-MGMT] Saving teams registry:', teamsList)
-  console.log('[TEAM-MGMT] Registry fields to save:', fields)
 
   const fields = {
     Title: '__TEAMS_REGISTRY__',
@@ -720,6 +719,8 @@ async function saveTeamsRegistry(token, teamsList) {
     Highlight: JSON.stringify(teamsList), // Store team list as JSON
     Blocker: new Date().toISOString(), // Track last update
   }
+
+  console.log('[TEAM-MGMT] Registry fields to save:', fields)
 
   try {
     // Try to find existing registry item
@@ -733,6 +734,15 @@ async function saveTeamsRegistry(token, teamsList) {
       )
     }
     const search = await searchResp.json()
+    console.log(
+      '[TEAM-MGMT] All items in list for save:',
+      search.value?.length,
+      'items',
+    )
+    console.log(
+      '[TEAM-MGMT] First few items for save:',
+      search.value?.slice(0, 3),
+    )
     const registryItems = (search.value || []).filter(
       (item) =>
         item.fields?.Title === '__TEAMS_REGISTRY__' ||
@@ -812,6 +822,15 @@ async function syncTeamsFromSharePoint(token) {
       )
     }
     const search = await searchResp.json()
+    console.log(
+      '[TEAM-MGMT] All items in list for sync:',
+      search.value?.length,
+      'items',
+    )
+    console.log(
+      '[TEAM-MGMT] First few items for sync:',
+      search.value?.slice(0, 3),
+    )
     const registryItems = (search.value || []).filter(
       (item) =>
         item.fields?.Title === '__TEAMS_REGISTRY__' ||
