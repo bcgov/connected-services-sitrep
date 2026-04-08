@@ -39,10 +39,13 @@ function setGridLoading() {
 
 // Load local data and attempt to sync unsaved changes
 async function loadLocalDataAndSync() {
-  // Load any locally saved team data
-  TEAMS.forEach((team) => {
-    const localData = localStorage.getItem('sitrep_team_' + team)
-    if (localData) {
+  // Load any locally saved team data from localStorage keys
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith('sitrep_team_'))
+    .forEach((key) => {
+      const team = key.replace(/^sitrep_team_/, '')
+      const localData = localStorage.getItem(key)
+      if (!localData) return
       try {
         const parsed = JSON.parse(localData)
         if (parsed._localOnly) {
@@ -52,8 +55,7 @@ async function loadLocalDataAndSync() {
       } catch (e) {
         console.warn(`Failed to parse local data for ${team}:`, e)
       }
-    }
-  })
+    })
 
   // Load coordinator data
   const coordData = localStorage.getItem('sitrep_coord')

@@ -133,7 +133,7 @@ function openModal(teamName) {
     btn.setAttribute('aria-pressed', (x === selectedRYG).toString())
   })
   selectedDeps = [...(t?.depsIn || [])]
-  TEAMS.forEach((tm) => {
+  getRosterTeams().forEach((tm) => {
     const el = document.getElementById('dep-' + tm.replace(/\//g, '-'))
     if (el) {
       el.classList.toggle('on', selectedDeps.includes(tm))
@@ -267,10 +267,12 @@ function pickRYG(c) {
 
 // ── DEPS PICKER ───────────────────────────────────────────────────────────────
 function buildDepsPicker() {
-  document.getElementById('deps-picker').innerHTML = TEAMS.map(
-    (t) =>
-      `<button type="button" class="featured-chip" id="dep-${t.replace(/\//g, '-')}" onclick="toggleDep('${esc(t)}')" aria-pressed="false">${esc(t)}</button>`,
-  ).join('')
+  document.getElementById('deps-picker').innerHTML = getRosterTeams()
+    .map(
+      (t) =>
+        `<button type="button" class="featured-chip" id="dep-${t.replace(/\//g, '-')}" onclick="toggleDep('${esc(t)}')" aria-pressed="false">${esc(t)}</button>`,
+    )
+    .join('')
 }
 
 function toggleDep(team) {
@@ -454,13 +456,21 @@ function clearAll() {
 }
 
 // ── TEAM MANAGEMENT (COORDINATOR PANEL) ──────────────────────────────────────
+function getRosterTeams() {
+  return [...new Set([...DEFAULT_TEAMS, ...Object.keys(data)])].sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: 'base' }),
+  )
+}
+
 function renderTeamsList() {
-  const listHtml = TEAMS.map(
-    (team) =>
-      `<div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #eef4ff; border-radius: 999px; font-size: 13px; white-space: nowrap;">
-        <span>${esc(team)}</span>
-      </div>`,
-  ).join('')
+  const listHtml = getRosterTeams()
+    .map(
+      (team) =>
+        `<div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #eef4ff; border-radius: 999px; font-size: 13px; white-space: nowrap;">
+          <span>${esc(team)}</span>
+        </div>`,
+    )
+    .join('')
   document.getElementById('teams-list').innerHTML =
     listHtml ||
     '<div style="font-size: 12px; color: var(--text3);">No teams available</div>'
@@ -469,11 +479,12 @@ function renderTeamsList() {
 function buildTeamSelect() {
   const select = document.getElementById('f-team')
   if (!select) return
+  const teams = getRosterTeams()
   select.innerHTML =
     '<option value="">Select team...</option>' +
-    TEAMS.map(
-      (team) => `<option value="${esc(team)}">${esc(team)}</option>`,
-    ).join('')
+    teams
+      .map((team) => `<option value="${esc(team)}">${esc(team)}</option>`)
+      .join('')
 }
 
 function parseTeamLabel(label) {

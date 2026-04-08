@@ -8,7 +8,7 @@ const CONFIG = {
   coordListName: 'SitRep Coordinator',
 }
 
-const TEAMS = [
+const DEFAULT_TEAMS = [
   'BCSC',
   'EFV',
   'SDG',
