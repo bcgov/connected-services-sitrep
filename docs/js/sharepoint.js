@@ -40,7 +40,7 @@ function setGridLoading() {
 // Load local data and attempt to sync unsaved changes
 async function loadLocalDataAndSync() {
   // Load any locally saved team data
-  TEAMS.forEach(team => {
+  TEAMS.forEach((team) => {
     const localData = localStorage.getItem('sitrep_team_' + team)
     if (localData) {
       try {
@@ -74,7 +74,7 @@ async function loadLocalDataAndSync() {
 
 // Attempt to sync locally saved data to SharePoint
 async function syncLocalData() {
-  const teamsToSync = Object.keys(data).filter(team => data[team]._localOnly)
+  const teamsToSync = Object.keys(data).filter((team) => data[team]._localOnly)
 
   for (const team of teamsToSync) {
     try {
@@ -96,66 +96,7 @@ async function loadFromSharePoint() {
   try {
     const initResult = await initMsal()
     if (!initResult) {
-      loadLocalDataAndSync()
-      renderAll()
-      return
-    }
-
-    // Not signed in → show sign in screen
-    const accounts = msalInstance.getAllAccounts()
-    if (accounts.length === 0) {
-      showFullPageState('signin')
-      return
-    }
-
-    let token = typeof initResult === 'string' ? initResult : await getToken()
-    if (!token) return
-
-    // Resolve site
-    const siteResp = await fetch(
-      `https://graph.microsoft.com/v1.0/sites/bcgov.sharepoint.com:/teams/12320-ConnectedServicesStrategicPriority`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    )
-    if (!siteResp.ok) throw new Error('Cannot access SharePoint site')
-    const site = await siteResp.json()
-    _siteId = site.id
-
-    // Resolve team data list
-    const listsResp = await fetch(
-      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists?$filter=displayName eq '${CONFIG.listName}'`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    )
-    const lists = await listsResp.json()
-    if (!lists.value?.length)
-      throw new Error(`List "${CONFIG.listName}" not found`)
-    _teamListId = lists.value[0].id
-
-    // Fetch all items
-    const itemsResp = await fetch(
-      `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items?$expand=fields&$top=500`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    )
-    const items = await itemsResp.json()
-    allHistoryItems = items.value || []
-
-    // Latest item per team for THIS week only.
-    // Belongs to this week if:
-    //   (a) WeekOf field matches this week label (dashboard edits / week-picker), OR
-    //   (b) no WeekOf and created on or after this Monday 00:00 local time (form submissions)
-    const currentWeek = getWeekLabel()
-    const weekStart = getWeekStart()
-    const byTeam = {}
-
-    // Parse WeekOf to a Date for comparison (handles both YYYY-MM-DD and DD-MM-YYYY formats)
-    function parseWeekOf(weekOfStr) {
-      if (!weekOfStr) return null
-      const parts = weekOfStr.split('-')
-      if (parts.length !== 3) return null
-      // Try YYYY-MM-DD first
-  setGridLoading()
-  try {
-    const initResult = await initMsal()
-    if (!initResult) {
+      await loadLocalDataAndSync()
       renderAll()
       return
     }
@@ -349,7 +290,7 @@ async function saveTeamToSharePoint(team, teamData) {
       summary: teamData.summary,
       _weekOf: teamData._weekOf || getWeekLabel(),
       _localOnly: true, // Flag to indicate this is local-only
-      _savedAt: new Date().toISOString()
+      _savedAt: new Date().toISOString(),
     }
     data[team] = teamData
     localStorage.setItem('sitrep_team_' + team, JSON.stringify(teamData))
@@ -368,7 +309,11 @@ Troubleshooting:
 • If you can see the dashboard but can't save, you may have read-only permissions
 • Try refreshing the page to re-authenticate
 • Contact support with this error details`
-    showErrorModal('Team Save Failed', `${userMsg} Data saved locally and will sync when connection is restored.`, details)
+    showErrorModal(
+      'Team Save Failed',
+      `${userMsg} Data saved locally and will sync when connection is restored.`,
+      details,
+    )
 
     if (statusEl) statusEl.textContent = '⚠ Saved locally'
     setTimeout(() => {
