@@ -711,6 +711,7 @@ async function saveTeamsRegistry(token, teamsList) {
   }
 
   console.log('[TEAM-MGMT] Saving teams registry:', teamsList)
+  console.log('[TEAM-MGMT] Registry fields to save:', fields)
 
   const fields = {
     Title: '__TEAMS_REGISTRY__',
@@ -798,6 +799,7 @@ async function syncTeamsFromSharePoint(token) {
   }
 
   console.log('[TEAM-MGMT] Syncing teams from SharePoint...')
+  console.log('[TEAM-MGMT] Current TEAMS before sync:', [...TEAMS])
 
   try {
     const searchResp = await fetch(
@@ -822,8 +824,11 @@ async function syncTeamsFromSharePoint(token) {
     )
 
     if (registryItems.length > 0) {
+      console.log('[TEAM-MGMT] Registry items:', registryItems)
       const registryItem = registryItems[0]
+      console.log('[TEAM-MGMT] Using registry item:', registryItem.fields)
       const highlight = registryItem.fields?.Highlight
+      console.log('[TEAM-MGMT] Highlight field:', highlight)
       if (highlight) {
         try {
           const syncedTeams = JSON.parse(highlight)
@@ -832,6 +837,7 @@ async function syncTeamsFromSharePoint(token) {
             TEAMS.push(...syncedTeams) // Add all new teams
             TEAMS.sort()
             console.log('[TEAM-MGMT] Synced teams from SharePoint:', TEAMS)
+            console.log('[TEAM-MGMT] TEAMS array updated, rebuilding UI...')
             buildTeamSelect()
             buildDepsPicker()
             renderTeamsList()
