@@ -6,10 +6,18 @@ function init() {
   buildDepsPicker()
   if (CONFIG.useSharePoint) {
     document.getElementById('csv-controls').style.display = 'none'
-    if (window.msal) { loadFromSharePoint() }
-    else {
-      const c = setInterval(() => { if (window.msal) { clearInterval(c); loadFromSharePoint() } }, 100)
+    if (window.msal) {
+      loadFromSharePoint()
+    } else {
+      const c = setInterval(() => {
+        if (window.msal) {
+          clearInterval(c)
+          loadFromSharePoint()
+        }
+      }, 100)
     }
+    // Start auto-refresh: reload every 30 seconds to see updates from others
+    startAutoRefresh()
   } else {
     data = JSON.parse(localStorage.getItem('sitrep_v2') || '{}')
     coord = JSON.parse(localStorage.getItem('sitrep_coord') || '{}')
@@ -17,10 +25,39 @@ function init() {
   }
 }
 
+// ── AUTO-REFRESH ──────────────────────────────────────────────────────────────
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer)
+  autoRefreshTimer = setInterval(() => {
+    if (CONFIG.useSharePoint && document.visibilityState === 'visible') {
+      loadFromSharePoint().catch((e) => console.warn('Auto-refresh failed:', e))
+    }
+  }, 30000) // Refresh every 30 seconds
+  console.log('[AUTO-REFRESH] Started (30s interval)')
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer)
+    autoRefreshTimer = null
+    console.log('[AUTO-REFRESH] Stopped')
+  }
+}
+
+// Stop auto-refresh if page becomes hidden, restart if visible
+document.addEventListener('visibilitychange', () => {
+  if (CONFIG.useSharePoint) {
+    if (document.hidden) stopAutoRefresh()
+    else startAutoRefresh()
+  }
+})
+
 // ── FILTER ────────────────────────────────────────────────────────────────────
 function setFilter(f, btn) {
   currentFilter = f
-  document.querySelectorAll('.filter-btn').forEach(b => b.setAttribute('aria-pressed', 'false'))
+  document
+    .querySelectorAll('.filter-btn')
+    .forEach((b) => b.setAttribute('aria-pressed', 'false'))
   btn.setAttribute('aria-pressed', 'true')
   renderGrid()
 }
@@ -28,7 +65,9 @@ function setFilter(f, btn) {
 // ── MODAL ─────────────────────────────────────────────────────────────────────
 function openModal(teamName) {
   const t = data[teamName]
-  document.getElementById('modal-title').textContent = t ? `Edit — ${teamName}` : `Add data — ${teamName}`
+  document.getElementById('modal-title').textContent = t
+    ? `Edit — ${teamName}`
+    : `Add data — ${teamName}`
   document.getElementById('f-team').value = teamName
   document.getElementById('f-highlight').value = t?.highlight || ''
   document.getElementById('f-blocker').value = t?.blocker || ''
@@ -37,13 +76,13 @@ function openModal(teamName) {
   document.getElementById('f-summary').value = t?.summary || ''
   document.getElementById('modal-save-status').textContent = ''
   selectedRYG = t?.status || null
-  ;['green', 'yellow', 'red'].forEach(x => {
+  ;['green', 'yellow', 'red'].forEach((x) => {
     const btn = document.getElementById('r' + x[0])
     btn.className = 'ryg-opt' + (x === selectedRYG ? ' sel-' + x : '')
     btn.setAttribute('aria-pressed', (x === selectedRYG).toString())
   })
   selectedDeps = [...(t?.depsIn || [])]
-  TEAMS.forEach(tm => {
+  TEAMS.forEach((tm) => {
     const el = document.getElementById('dep-' + tm.replace(/\//g, '-'))
     if (el) {
       el.classList.toggle('on', selectedDeps.includes(tm))
@@ -79,7 +118,10 @@ function closeModalOutside(e) {
 
 function saveTeam() {
   const team = document.getElementById('f-team').value
-  if (!team || !selectedRYG) { showToast('Please select a status'); return }
+  if (!team || !selectedRYG) {
+    showToast('Please select a status')
+    return
+  }
   const teamData = {
     team,
     status: selectedRYG,
@@ -93,7 +135,8 @@ function saveTeam() {
     _spId: data[team]?._spId || null,
   }
   data[team] = teamData
-  if (!CONFIG.useSharePoint) localStorage.setItem('sitrep_v2', JSON.stringify(data))
+  if (!CONFIG.useSharePoint)
+    localStorage.setItem('sitrep_v2', JSON.stringify(data))
   else saveTeamToSharePoint(team, teamData)
   renderAll()
   renderFeaturedChips()
@@ -102,21 +145,39 @@ function saveTeam() {
 }
 
 // Focus trap in modal
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeModal(); return }
-  if (e.key === 'Tab' && document.getElementById('modal-overlay').classList.contains('show')) {
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModal()
+    return
+  }
+  if (
+    e.key === 'Tab' &&
+    document.getElementById('modal-overlay').classList.contains('show')
+  ) {
     const modal = document.querySelector('.modal')
-    const focusable = modal.querySelectorAll('button,input,select,textarea,[tabindex]:not([tabindex="-1"])')
-    const first = focusable[0], last = focusable[focusable.length - 1]
-    if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus() } }
-    else { if (document.activeElement === last) { e.preventDefault(); first.focus() } }
+    const focusable = modal.querySelectorAll(
+      'button,input,select,textarea,[tabindex]:not([tabindex="-1"])',
+    )
+    const first = focusable[0],
+      last = focusable[focusable.length - 1]
+    if (e.shiftKey) {
+      if (document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      }
+    } else {
+      if (document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
   }
 })
 
 // ── RYG PICKER ────────────────────────────────────────────────────────────────
 function pickRYG(c) {
   selectedRYG = c
-  ;['green', 'yellow', 'red'].forEach(x => {
+  ;['green', 'yellow', 'red'].forEach((x) => {
     const btn = document.getElementById('r' + x[0])
     btn.className = 'ryg-opt' + (x === c ? ' sel-' + c : '')
     btn.setAttribute('aria-pressed', (x === c).toString())
@@ -125,8 +186,9 @@ function pickRYG(c) {
 
 // ── DEPS PICKER ───────────────────────────────────────────────────────────────
 function buildDepsPicker() {
-  document.getElementById('deps-picker').innerHTML = TEAMS.map(t =>
-    `<button type="button" class="featured-chip" id="dep-${t.replace(/\//g, '-')}" onclick="toggleDep('${esc(t)}')" aria-pressed="false">${esc(t)}</button>`
+  document.getElementById('deps-picker').innerHTML = TEAMS.map(
+    (t) =>
+      `<button type="button" class="featured-chip" id="dep-${t.replace(/\//g, '-')}" onclick="toggleDep('${esc(t)}')" aria-pressed="false">${esc(t)}</button>`,
   ).join('')
 }
 
@@ -145,7 +207,9 @@ function toggleDep(team) {
 function toggleCoord() {
   coordOpen = !coordOpen
   document.getElementById('coord-bar').classList.toggle('show', coordOpen)
-  document.getElementById('coord-bar').setAttribute('aria-hidden', (!coordOpen).toString())
+  document
+    .getElementById('coord-bar')
+    .setAttribute('aria-hidden', (!coordOpen).toString())
   const btn = document.getElementById('coord-btn')
   btn.setAttribute('aria-pressed', coordOpen.toString())
   btn.setAttribute('aria-expanded', coordOpen.toString())
@@ -167,13 +231,26 @@ function saveCoord() {
 
 function renderFeaturedChips() {
   const teams = Object.values(data)
-  const featHL = coord.featuredHighlights || [], featBL = coord.featuredBlockers || []
-  document.getElementById('feat-hl-chips').innerHTML = teams.filter(t => t.highlight).map(t =>
-    `<button type="button" class="featured-chip ${featHL.includes(t.team) ? 'on' : ''}" onclick="toggleFeat('hl','${esc(t.team)}')" aria-pressed="${featHL.includes(t.team)}">${esc(t.team)}</button>`
-  ).join('') || '<span style="font-size:12px;color:var(--text3)">No highlights yet</span>'
-  document.getElementById('feat-bl-chips').innerHTML = teams.filter(t => t.blocker).map(t =>
-    `<button type="button" class="featured-chip ${featBL.includes(t.team) ? 'on' : ''}" onclick="toggleFeat('bl','${esc(t.team)}')" aria-pressed="${featBL.includes(t.team)}">${esc(t.team)}</button>`
-  ).join('') || '<span style="font-size:12px;color:var(--text3)">No blockers yet</span>'
+  const featHL = coord.featuredHighlights || [],
+    featBL = coord.featuredBlockers || []
+  document.getElementById('feat-hl-chips').innerHTML =
+    teams
+      .filter((t) => t.highlight)
+      .map(
+        (t) =>
+          `<button type="button" class="featured-chip ${featHL.includes(t.team) ? 'on' : ''}" onclick="toggleFeat('hl','${esc(t.team)}')" aria-pressed="${featHL.includes(t.team)}">${esc(t.team)}</button>`,
+      )
+      .join('') ||
+    '<span style="font-size:12px;color:var(--text3)">No highlights yet</span>'
+  document.getElementById('feat-bl-chips').innerHTML =
+    teams
+      .filter((t) => t.blocker)
+      .map(
+        (t) =>
+          `<button type="button" class="featured-chip ${featBL.includes(t.team) ? 'on' : ''}" onclick="toggleFeat('bl','${esc(t.team)}')" aria-pressed="${featBL.includes(t.team)}">${esc(t.team)}</button>`,
+      )
+      .join('') ||
+    '<span style="font-size:12px;color:var(--text3)">No blockers yet</span>'
 }
 
 function toggleFeat(type, team) {
@@ -192,7 +269,10 @@ function addMeeting() {
   const title = document.getElementById('mtg-title').value.trim()
   const time = document.getElementById('mtg-time').value.trim()
   const link = document.getElementById('mtg-link').value.trim()
-  if (!title) { showToast('Please enter a meeting title'); return }
+  if (!title) {
+    showToast('Please enter a meeting title')
+    return
+  }
   if (!coord.meetings) coord.meetings = []
   coord.meetings.push({ title, time, link, id: Date.now() })
   debounceSave()
@@ -205,22 +285,29 @@ function addMeeting() {
 }
 
 function removeMeeting(id) {
-  coord.meetings = (coord.meetings || []).filter(m => m.id !== id)
+  coord.meetings = (coord.meetings || []).filter((m) => m.id !== id)
   debounceSave()
   renderMeetingsList()
   updateSummary()
 }
 
 function renderMeetingsList() {
-  const meetings = coord.meetings || [], el = document.getElementById('meetings-list')
+  const meetings = coord.meetings || [],
+    el = document.getElementById('meetings-list')
   if (!el) return
   el.innerHTML = meetings.length
-    ? meetings.map(m => `<div style="display:flex;align-items:center;gap:8px;background:white;border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;">
+    ? meetings
+        .map(
+          (
+            m,
+          ) => `<div style="display:flex;align-items:center;gap:8px;background:white;border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;">
         <span style="flex:1;font-weight:600">${esc(m.title)}</span>
         ${m.time ? `<span style="color:var(--text3);font-size:11px">${esc(m.time)}</span>` : ''}
         ${m.link ? `<a href="${esc(m.link)}" target="_blank" style="font-size:11px;color:var(--link)">🔗 Link</a>` : ''}
         <button type="button" onclick="removeMeeting(${m.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;" aria-label="Remove meeting ${esc(m.title)}">✕</button>
-      </div>`).join('')
+      </div>`,
+        )
+        .join('')
     : '<span style="font-size:12px;color:var(--text3)">No meetings added yet</span>'
 }
 
@@ -231,20 +318,27 @@ function uploadCSV(event) {
   const reader = new FileReader()
   reader.onload = function (e) {
     const text = e.target.result.replace(/^\uFEFF/, '')
-    const lines = text.split(/\r?\n/).filter(l => l.trim())
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
+    const lines = text.split(/\r?\n/).filter((l) => l.trim())
+    const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''))
     let count = 0
     for (let i = 1; i < lines.length; i++) {
-      const cols = []; let current = '', inQuotes = false
+      const cols = []
+      let current = '',
+        inQuotes = false
       for (let c = 0; c < lines[i].length; c++) {
         const ch = lines[i][c]
-        if (ch === '"') { inQuotes = !inQuotes }
-        else if (ch === ',' && !inQuotes) { cols.push(current.trim()); current = '' }
-        else { current += ch }
+        if (ch === '"') {
+          inQuotes = !inQuotes
+        } else if (ch === ',' && !inQuotes) {
+          cols.push(current.trim())
+          current = ''
+        } else {
+          current += ch
+        }
       }
       cols.push(current.trim())
       const row = {}
-      headers.forEach((h, j) => row[h] = (cols[j] || '').trim())
+      headers.forEach((h, j) => (row[h] = (cols[j] || '').trim()))
       const team = row.TeamName
       if (!team) continue
       data[team] = {
@@ -269,7 +363,8 @@ function uploadCSV(event) {
 }
 
 function clearAll() {
-  if (!confirm('Clear all team data for this week? This cannot be undone.')) return
+  if (!confirm('Clear all team data for this week? This cannot be undone.'))
+    return
   data = {}
   localStorage.removeItem('sitrep_v2')
   renderAll()

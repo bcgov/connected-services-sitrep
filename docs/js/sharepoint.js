@@ -114,7 +114,11 @@ async function loadFromSharePoint() {
       const currentWeekDate = parseWeekOf(currentWeek)
 
       // Include if: WeekOf matches this week, OR entry was created this week
-      const belongsToThisWeek = (weekOfDate && currentWeekDate && weekOfDate.getTime() === currentWeekDate.getTime()) || created >= weekStart
+      const belongsToThisWeek =
+        (weekOfDate &&
+          currentWeekDate &&
+          weekOfDate.getTime() === currentWeekDate.getTime()) ||
+        created >= weekStart
 
       if (!belongsToThisWeek) return
       if (!byTeam[team]) {
@@ -168,7 +172,7 @@ async function saveTeamToSharePoint(team, teamData) {
       WeekSummary: teamData.summary,
     }
     if (teamData._spId) {
-      await fetch(
+      const patchResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items/${teamData._spId}/fields`,
         {
           method: 'PATCH',
@@ -179,8 +183,12 @@ async function saveTeamToSharePoint(team, teamData) {
           body: JSON.stringify(fields),
         },
       )
+      if (!patchResp.ok) {
+        const errDetail = await patchResp.text()
+        throw new Error(`PATCH failed ${patchResp.status}: ${errDetail}`)
+      }
     } else {
-      const resp = await fetch(
+      const postResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/items`,
         {
           method: 'POST',
@@ -191,19 +199,35 @@ async function saveTeamToSharePoint(team, teamData) {
           body: JSON.stringify({ fields }),
         },
       )
-      const created = await resp.json()
-      data[team]._spId = created.id
+      if (!postResp.ok) {
+        const errDetail = await postResp.text()
+        throw new Error(`POST failed ${postResp.status}: ${errDetail}`)
+      }
+      const created = await postResp.json()
+      if (created.id) {
+        data[team]._spId = created.id
+      } else {
+        throw new Error('No item ID returned from SharePoint')
+      }
     }
     if (statusEl) statusEl.textContent = '✓ Saved to SharePoint'
     setTimeout(() => {
       if (statusEl) statusEl.textContent = ''
     }, 2500)
   } catch (e) {
-    console.warn('Could not save team to SharePoint:', e)
-    if (statusEl) statusEl.textContent = '⚠ SharePoint save failed'
+    console.error('ERROR: Could not save team to SharePoint:', e.message, e)
+    const userMsg = e.message.includes('429')
+      ? 'Save failed: Too many requests (server busy). Try again in a moment.'
+      : e.message.includes('401')
+        ? 'Save failed: Authentication expired. Please refresh the page.'
+        : e.message.includes('403')
+          ? 'Save failed: Permission denied. Check your access.'
+          : `Save failed: ${e.message}`
+    if (statusEl) statusEl.textContent = `⚠ ${userMsg}`
+    showToast(`⚠ Team save failed: ${userMsg}`)
     setTimeout(() => {
       if (statusEl) statusEl.textContent = ''
-    }, 3000)
+    }, 5000)
   }
 }
 
@@ -277,7 +301,7 @@ async function saveCoordToSharePoint() {
       FeaturedBlockers: JSON.stringify(coord.featuredBlockers || []),
     }
     if (coordItemId) {
-      await fetch(
+      const patchResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items/${coordItemId}/fields`,
         {
           method: 'PATCH',
@@ -288,8 +312,12 @@ async function saveCoordToSharePoint() {
           body: JSON.stringify(fields),
         },
       )
+      if (!patchResp.ok) {
+        const errDetail = await patchResp.text()
+        throw new Error(`PATCH failed ${patchResp.status}: ${errDetail}`)
+      }
     } else {
-      const resp = await fetch(
+      const postResp = await fetch(
         `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_coordListId}/items`,
         {
           method: 'POST',
@@ -300,20 +328,36 @@ async function saveCoordToSharePoint() {
           body: JSON.stringify({ fields }),
         },
       )
-      const created = await resp.json()
-      coordItemId = created.id
+      if (!postResp.ok) {
+        const errDetail = await postResp.text()
+        throw new Error(`POST failed ${postResp.status}: ${errDetail}`)
+      }
+      const created = await postResp.json()
+      if (created.id) {
+        coordItemId = created.id
+      } else {
+        throw new Error('No item ID returned from SharePoint')
+      }
     }
     if (savingEl) savingEl.textContent = '✓ Saved'
     setTimeout(() => {
       if (savingEl) savingEl.textContent = ''
     }, 2000)
   } catch (e) {
-    console.warn('Could not save coordinator data:', e)
+    console.error('ERROR: Could not save coordinator data:', e.message, e)
     localStorage.setItem('sitrep_coord', JSON.stringify(coord))
-    if (savingEl) savingEl.textContent = '⚠ Saved locally'
+    const userMsg = e.message.includes('429')
+      ? 'Server busy (rate limit). Saved locally—will sync when available.'
+      : e.message.includes('401')
+        ? 'Authentication expired. Saved locally. Please refresh.'
+        : e.message.includes('403')
+          ? 'Permission denied. Saved locally. Check your access.'
+          : `Could not reach SharePoint. Saved locally.`
+    if (savingEl) savingEl.textContent = `⚠ ${userMsg}`
+    showToast(`⚠ ${userMsg}`)
     setTimeout(() => {
       if (savingEl) savingEl.textContent = ''
-    }, 3000)
+    }, 5000)
   }
 }
 
