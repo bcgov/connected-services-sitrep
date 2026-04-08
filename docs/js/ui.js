@@ -574,7 +574,12 @@ async function addTeamToSharePoint(teamName) {
 
     showErrorModal(
       '✅ Team Added Successfully',
-      `"${teamName}" has been added and is now available to all users.\n\n⚠️ Important Next Steps:\n\n• Update the MS Form to include "${teamName}" in the team selection question\n• Add "${teamName}" to dependency fields if applicable\n• The change will sync to all connected users automatically`,
+      `"${teamName}" has been added and is now available to all users.<br><br><strong>Next steps:</strong><ul style="padding-left:18px;margin:8px 0;line-height:1.6;">` +
+        `<li>Update the MS Form to include "${teamName}" in the team selection question — <a href="https://forms.office.com/" target="_blank">Edit the form</a></li>` +
+        `<li>Add "${teamName}" to the dependency dropdown in the app</li>` +
+        `<li>Add "${teamName}" to the SharePoint <strong>TeamName</strong> choice list — <a href="https://bcgov.sharepoint.com/teams/12320-ConnectedServicesStrategicPriority/Lists/Weekly%20SitRep%20Data/AllItems.aspx" target="_blank">Open SharePoint list</a></li>` +
+        `<li>Add "${teamName}" to the SharePoint <strong>DependenciesIn</strong> choice list</li></ul>` +
+        `<div style="margin-top:10px;color:#555;">The change will sync to all connected users automatically.</div>`,
       '',
     )
 
