@@ -459,13 +459,11 @@ function renderTeamsList() {
     (team) =>
       `<div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #eef4ff; border-radius: 999px; font-size: 13px; white-space: nowrap;">
         <span>${esc(team)}</span>
-        <button type="button" class="team-btn rename" onclick="openRenameTeamModal('${esc(team)}')">Rename</button>
-        <button type="button" class="team-btn remove" onclick="removeTeamFromPanel('${esc(team)}')">Remove</button>
       </div>`,
   ).join('')
   document.getElementById('teams-list').innerHTML =
     listHtml ||
-    '<div style="font-size: 12px; color: var(--text3);">No teams to manage</div>'
+    '<div style="font-size: 12px; color: var(--text3);">No teams available</div>'
 }
 
 function buildTeamSelect() {
@@ -534,210 +532,18 @@ function showTeamDialog({ title, teamName = '', acronym = '', onSave }) {
 }
 
 function openAddTeamModal() {
-  showTeamDialog({
-    title: 'Add New Team',
-    teamName: '',
-    acronym: '',
-    onSave: (teamName, acronym) =>
-      addTeamToSharePoint(makeTeamLabel(teamName, acronym)),
-  })
+  showManualTeamInstructions()
 }
 
-async function addTeamToSharePoint(teamName) {
-  try {
-    console.log('[TEAM-MGMT] Adding team locally:', teamName)
-
-    // Check if team already exists
-    if (TEAMS.includes(teamName)) {
-      showErrorModal(
-        'Team Already Exists',
-        `The team "${teamName}" already exists in the system.`,
-        '',
-      )
-      return
-    }
-
-    // Add to TEAMS array locally
-    TEAMS.push(teamName)
-    TEAMS.sort() // Keep alphabetical
-    buildTeamSelect()
-    buildDepsPicker()
-    renderTeamsList()
-    renderFeaturedChips()
-    renderGrid()
-
-    showErrorModal(
-      '✅ Team Added Successfully',
-      `"${teamName}" has been added locally, but dropdown values must be updated manually in SharePoint.<br><br><strong>Next steps:</strong><ul style="padding-left:18px;margin:8px 0;line-height:1.6;">` +
-        `<li>Update the MS Form team selection question: <a href="https://forms.office.com/r/5qzNa4JpH9" target="_blank">Edit the form</a></li>` +
-        `<li>Add "${teamName}" to the app dependency dropdown if it is a dependency for other teams</li>` +
-        `<li>Add "${teamName}" to the SharePoint <strong>TeamName</strong> choice list: <a href="https://bcgov.sharepoint.com/teams/12320-ConnectedServicesStrategicPriority/Lists/Weekly%20SitRep%20Data/AllItems.aspx" target="_blank">Open SharePoint list</a></li>` +
-        `<li>Add "${teamName}" to the SharePoint <strong>DependenciesIn</strong> choice list</li></ul>` +
-        `<div style="margin-top:10px;color:#555;">After these updates, the change will sync for all connected users.</div>`,
-      '',
-    )
-
-    console.log('[TEAM-MGMT] Team added locally:', teamName)
-  } catch (e) {
-    console.error('[TEAM-MGMT] Error adding team:', e)
-    showErrorModal(
-      'Failed to Add Team',
-      `Could not add "${teamName}": ${e.message}`,
-      '',
-    )
-  }
-}
-
-async function removeTeamFromPanel(teamName) {
-  if (
-    !confirm(
-      `Are you sure you want to remove "${teamName}"?\n\nThis will hide it from future submissions but existing data will remain.`,
-    )
+function showManualTeamInstructions() {
+  showErrorModal(
+    'Team Management is Manual',
+    `Team additions, renames and removals are managed directly in SharePoint and the MS Form.<br><br>` +
+      `<ul style="padding-left:18px;margin:8px 0;line-height:1.6;">` +
+      `<li>Update the MS Form team selection question: <a href="https://forms.office.com/r/5qzNa4JpH9" target="_blank">Edit the form</a></li>` +
+      `<li>Add the new team to the SharePoint <strong>TeamName</strong> choice list: <a href="https://bcgov.sharepoint.com/teams/12320-ConnectedServicesStrategicPriority/Lists/Weekly%20SitRep%20Data/AllItems.aspx" target="_blank">Open SharePoint list</a></li>` +
+      `<li>Add the new team to the SharePoint <strong>DependenciesIn</strong> choice list</li>` +
+      `<li>After those updates, refresh the dashboard to see the new team</li></ul>`,
+    '',
   )
-    return
-
-  try {
-    console.log('[TEAM-MGMT] Removing team:', teamName)
-    // Remove from TEAMS array
-    const idx = TEAMS.indexOf(teamName)
-    if (idx >= 0) TEAMS.splice(idx, 1)
-
-    // If team already had saved data, keep it but preserve the object for history
-    if (data[teamName]) {
-      delete data[teamName]
-    }
-
-    // Force UI rebuild
-    buildTeamSelect()
-    buildDepsPicker()
-    renderTeamsList()
-    renderFeaturedChips()
-    renderGrid()
-
-    showToast(
-      `✓ "${teamName}" removed locally. Please update SharePoint choices manually.`,
-    )
-
-    console.log('[TEAM-MGMT] Team removed locally:', teamName)
-  } catch (e) {
-    console.error('[TEAM-MGMT] Error removing team:', e)
-    showErrorModal(
-      'Failed to Remove Team',
-      `Could not remove "${teamName}": ${e.message}`,
-      '',
-    )
-  }
-}
-
-function openRenameTeamModal(existingTeam) {
-  const { acronym, teamName } = parseTeamLabel(existingTeam)
-  showTeamDialog({
-    title: `Rename ${existingTeam}`,
-    teamName,
-    acronym,
-    onSave: (newName, newAcronym) =>
-      renameTeam(existingTeam, makeTeamLabel(newName, newAcronym)),
-  })
-}
-
-async function renameTeam(oldName, newName) {
-  if (!newName) {
-    showToast('Please enter a valid team name')
-    return
-  }
-  if (TEAMS.includes(newName) && oldName !== newName) {
-    showErrorModal(
-      'Team Already Exists',
-      `The team "${newName}" already exists in the system.`,
-      '',
-    )
-    return
-  }
-
-  const idx = TEAMS.indexOf(oldName)
-  if (idx < 0) return
-  TEAMS[idx] = newName
-  TEAMS.sort()
-
-  if (data[oldName]) {
-    data[newName] = { ...data[oldName], team: newName }
-    delete data[oldName]
-  }
-
-  if (coord.featuredHighlights) {
-    coord.featuredHighlights = coord.featuredHighlights.map((t) =>
-      t === oldName ? newName : t,
-    )
-  }
-  if (coord.featuredBlockers) {
-    coord.featuredBlockers = coord.featuredBlockers.map((t) =>
-      t === oldName ? newName : t,
-    )
-  }
-
-  buildTeamSelect()
-  buildDepsPicker()
-  renderTeamsList()
-  renderFeaturedChips()
-  renderGrid()
-
-  showToast(
-    `✓ "${oldName}" renamed to "${newName}" locally. Please update SharePoint choices manually.`,
-  )
-}
-
-async function getListColumnDefinition(token, columnName) {
-  const resp = await fetch(
-    `https://graph.microsoft.com/v1.0/sites/${_siteId}/lists/${_teamListId}/columns`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  )
-  if (!resp.ok) {
-    throw new Error(`Could not load columns: ${resp.status}`)
-  }
-  const json = await resp.json()
-  const column = (json.value || []).find(
-    (col) =>
-      col.name === columnName ||
-      col.displayName === columnName ||
-      col.name === columnName.replace(/\s+/g, '') ||
-      col.displayName === columnName.replace(/\s+/g, ''),
-  )
-  if (!column) {
-    throw new Error(`List column ${columnName} not found`)
-  }
-  return column
-}
-
-async function syncTeamsFromSharePoint(token) {
-  if (!_siteId || !_teamListId) {
-    console.warn(
-      '[TEAM-MGMT] Cannot sync teams: _siteId or _teamListId not set',
-    )
-    return
-  }
-
-  console.log('[TEAM-MGMT] Syncing teams from SharePoint TeamName column...')
-
-  try {
-    const column = await getListColumnDefinition(token, 'TeamName')
-    const choices = Array.isArray(column.choices) ? column.choices : []
-    if (choices.length === 0) {
-      console.log(
-        '[TEAM-MGMT] No TeamName choices found in SharePoint; using defaults',
-      )
-      return
-    }
-
-    TEAMS.length = 0
-    TEAMS.push(...choices.filter(Boolean))
-    TEAMS.sort()
-
-    console.log('[TEAM-MGMT] Synced teams from SharePoint choices:', TEAMS)
-    buildTeamSelect()
-    buildDepsPicker()
-    renderTeamsList()
-    renderGrid()
-  } catch (e) {
-    console.warn('[TEAM-MGMT] Could not sync teams from SharePoint:', e.message)
-  }
 }
